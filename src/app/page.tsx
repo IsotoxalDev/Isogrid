@@ -57,7 +57,7 @@ const INITIAL_ARROWS: ArrowData[] = [
   { id: 'arrow-1', from: 'item-1', to: 'item-2', parentId: null },
 ];
 
-const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '73 56% 60%', showGrid: true, vignetteStrength: 0 } };
+const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '73 56% 60%', showGrid: true, vignetteStrength: 100 } };
 
 const GRID_SIZE = 40;
 
@@ -268,7 +268,7 @@ export default function CanvasCraftPage() {
   
   const handleItemDoubleClick = (item: CanvasItemData) => {
       if (item.type === 'board') {
-          const newBoard: Board = {id: item.id, name: item.content, settings: { showGrid: true, vignetteStrength: 0 }};
+          const newBoard: Board = {id: item.id, name: item.content, settings: { showGrid: true, vignetteStrength: 100 }};
           setBoardStack(stack => [...stack, newBoard]);
           setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
           setHistory([{ items, arrows }]);
