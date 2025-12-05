@@ -390,9 +390,9 @@ export default function CanvasCraftPage() {
   };
 
   if (vignetteStrength > 0) {
-    const invertedVignette = 100 - vignetteStrength;
-    gridStyleProps.maskImage = `radial-gradient(circle, white ${invertedVignette}%, transparent 100%)`;
-    gridStyleProps.WebkitMaskImage = `radial-gradient(circle, white ${invertedVignette}%, transparent 100%)`;
+    const visiblePercentage = 100 - vignetteStrength;
+    gridStyleProps.maskImage = `radial-gradient(circle, white ${visiblePercentage}%, transparent 100%)`;
+    gridStyleProps.WebkitMaskImage = `radial-gradient(circle, white ${visiblePercentage}%, transparent 100%)`;
   }
 
   return (
