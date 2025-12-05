@@ -89,7 +89,7 @@ export default function CanvasCraftPage() {
   
   // Combine settings from board stack
   const combinedSettings = boardStack.reduce((acc, board) => ({ ...acc, ...board.settings }), {} as BoardSettings);
-  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor } = combinedSettings;
+  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteStrength = 75 } = combinedSettings;
 
 
   const updateState = (newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]), newArrows: ArrowData[] | ((prev: ArrowData[]) => ArrowData[])) => {
@@ -405,8 +405,8 @@ export default function CanvasCraftPage() {
                     backgroundImage: gridBackgroundImage,
                     backgroundSize: `${scaledGridSize}px ${scaledGridSize}px`,
                     backgroundPosition: `${viewState.pan.x % scaledGridSize}px ${viewState.pan.y % scaledGridSize}px`,
-                    maskImage: 'radial-gradient(circle, white, transparent 75%)',
-                    WebkitMaskImage: 'radial-gradient(circle, white, transparent 75%)',
+                    maskImage: `radial-gradient(circle, white, transparent ${vignetteStrength}%)`,
+                    WebkitMaskImage: `radial-gradient(circle, white, transparent ${vignetteStrength}%)`,
                 }}
             />
         )}

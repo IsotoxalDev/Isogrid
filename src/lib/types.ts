@@ -38,6 +38,7 @@ export interface BoardSettings {
     showGrid?: boolean;
     gridStyle?: GridStyle;
     gridOpacity?: number;
+    vignetteStrength?: number;
 }
 
 export interface Board {
