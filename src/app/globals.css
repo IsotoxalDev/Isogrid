@@ -2,12 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-.grid-background {
-  background-image: radial-gradient(hsl(var(--muted-foreground) / 0.5) 1px, transparent 0);
-  background-size: 20px 20px;
-  background-position: -10px -10px;
-}
-
 @layer base {
   :root {
     --background: 0 0% 100%;

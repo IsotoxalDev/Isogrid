@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, type MouseEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, type MouseEvent, CSSProperties } from 'react';
 import {
   CanvasItemData,
   Point,
@@ -55,6 +55,8 @@ const INITIAL_ARROWS: ArrowData[] = [
 ];
 
 const ROOT_BOARD: Board = { id: 'root', name: 'Home' };
+
+const GRID_SIZE = 40;
 
 export default function CanvasCraftPage() {
   const [items, setItems] = useState<CanvasItemData[]>(INITIAL_ITEMS);
@@ -244,14 +246,15 @@ export default function CanvasCraftPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+  
+  const scaledGridSize = GRID_SIZE * viewState.zoom;
 
   return (
     <main
       ref={canvasRef}
       className={cn(
         "w-screen h-screen overflow-hidden bg-background relative cursor-grab active:cursor-grabbing",
-        {'cursor-crosshair': connectionState.from !== undefined },
-        {'grid-background': showGrid}
+        {'cursor-crosshair': connectionState.from !== undefined }
       )}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
@@ -260,6 +263,18 @@ export default function CanvasCraftPage() {
       onContextMenu={handleContextMenu}
       onClick={() => contextMenu.show && setContextMenu({ ...contextMenu, show: false })}
     >
+        {showGrid && (
+            <div
+                className="absolute inset-0 w-full h-full"
+                style={{
+                    backgroundImage: `radial-gradient(hsl(var(--muted-foreground) / 0.5) 1px, transparent 0)`,
+                    backgroundSize: `${scaledGridSize}px ${scaledGridSize}px`,
+                    backgroundPosition: `${viewState.pan.x % scaledGridSize}px ${viewState.pan.y % scaledGridSize}px`,
+                    maskImage: 'radial-gradient(circle, white, transparent 75%)',
+                    WebkitMaskImage: 'radial-gradient(circle, white, transparent 75%)',
+                }}
+            />
+        )}
         <div className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-background/80 backdrop-blur-sm">
             <div className="flex items-center space-x-2 text-sm text-foreground">
                 {boardStack.map((board, index) => (
