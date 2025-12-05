@@ -1,7 +1,7 @@
 "use client";
 
 import type { FC } from 'react';
-import { ArrowData, CanvasItemData } from '@/lib/types';
+import { ArrowData, CanvasItemData, Point } from '@/lib/types';
 
 interface ArrowRendererProps {
   arrows: ArrowData[];
@@ -11,12 +11,50 @@ interface ArrowRendererProps {
 const ArrowRenderer: FC<ArrowRendererProps> = ({ arrows, items }) => {
   const itemsById = new Map(items.map(item => [item.id, item]));
 
-  const getCenter = (item: CanvasItemData) => {
+  const getIntersectionPoint = (fromItem: CanvasItemData, toItem: CanvasItemData): { start: Point, end: Point } => {
+    const from = {
+        x: fromItem.position.x + fromItem.width / 2,
+        y: fromItem.position.y + fromItem.height / 2,
+        width: fromItem.width,
+        height: fromItem.height,
+    };
+    const to = {
+        x: toItem.position.x + toItem.width / 2,
+        y: toItem.position.y + toItem.height / 2,
+        width: toItem.width,
+        height: toItem.height,
+    };
+
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const angle = Math.atan2(dy, dx);
+
+    const calcIntersection = (item: {width: number, height: number}, angle: number): Point => {
+        const w = item.width / 2;
+        const h = item.height / 2;
+        const tan = Math.tan(angle);
+        const region = Math.abs(angle) > Math.PI / 4 && Math.abs(angle) < 3 * Math.PI / 4;
+
+        let x, y;
+        if (region) { // Top or bottom
+            y = Math.sign(dy) * h;
+            x = y / tan;
+        } else { // Left or right
+            x = Math.sign(dx) * w;
+            y = x * tan;
+        }
+        return { x, y };
+    }
+
+    const startOffset = calcIntersection(fromItem, angle);
+    const endOffset = calcIntersection(toItem, angle - Math.PI);
+
     return {
-      x: item.position.x + item.width / 2,
-      y: item.position.y + item.height / 2,
+        start: { x: from.x + startOffset.x, y: from.y + startOffset.y },
+        end: { x: to.x + endOffset.x, y: to.y + endOffset.y },
     };
   };
+
 
   return (
     <svg
@@ -48,24 +86,15 @@ const ArrowRenderer: FC<ArrowRendererProps> = ({ arrows, items }) => {
 
         if (!fromItem || !toItem) return null;
 
-        const p1 = getCenter(fromItem);
-        const p2 = getCenter(toItem);
-        
-        // A simple way to not draw the line right to the center, but to the edge
-        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-        const toItemRadius = Math.min(toItem.width / 2, toItem.height / 2); // simplistic radius
-        const endPoint = {
-          x: p2.x - toItemRadius * Math.cos(angle) * 0.8, // Adjust multiplier for appearance
-          y: p2.y - toItemRadius * Math.sin(angle) * 0.8
-        };
+        const { start, end } = getIntersectionPoint(fromItem, toItem);
         
         return (
           <line
             key={arrow.id}
-            x1={p1.x}
-            y1={p1.y}
-            x2={endPoint.x}
-            y2={endPoint.y}
+            x1={start.x}
+            y1={start.y}
+            x2={end.x}
+            y2={end.y}
             stroke="hsl(var(--primary))"
             strokeWidth="2"
             markerEnd="url(#arrowhead)"

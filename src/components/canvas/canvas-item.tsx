@@ -193,8 +193,8 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
         className={cn(
           "w-full h-full overflow-hidden transition-colors duration-200 rounded-lg shadow-md",
           item.type === 'image' && 'p-0 border-0',
-          item.type === 'text' && 'bg-background/80 backdrop-blur-sm',
-          item.type === 'board' && 'flex items-center justify-center bg-background/80 backdrop-blur-sm',
+          item.type === 'text' && 'bg-card',
+          item.type === 'board' && 'flex items-center justify-center bg-card',
         )}
       >
         {renderContent()}
