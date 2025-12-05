@@ -89,7 +89,7 @@ export default function CanvasCraftPage() {
   
   // Combine settings from board stack
   const combinedSettings = boardStack.reduce((acc, board) => ({ ...acc, ...board.settings }), {} as BoardSettings);
-  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteStrength = 0 } = combinedSettings;
+  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteStrength = 100 } = combinedSettings;
 
 
   const updateState = (newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]), newArrows: ArrowData[] | ((prev: ArrowData[]) => ArrowData[])) => {
@@ -389,12 +389,6 @@ export default function CanvasCraftPage() {
     backgroundPosition: `${viewState.pan.x % scaledGridSize}px ${viewState.pan.y % scaledGridSize}px`,
   };
 
-  if (vignetteStrength > 0) {
-    const visiblePercentage = 100 - vignetteStrength;
-    gridStyleProps.maskImage = `radial-gradient(circle, white ${visiblePercentage}%, transparent 100%)`;
-    gridStyleProps.WebkitMaskImage = `radial-gradient(circle, white ${visiblePercentage}%, transparent 100%)`;
-  }
-
   return (
     <main
       ref={canvasRef}
@@ -415,6 +409,17 @@ export default function CanvasCraftPage() {
                 style={gridStyleProps}
             />
         )}
+
+        {vignetteStrength > 0 && (
+          <div
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{
+              background: 'radial-gradient(circle, transparent 40%, hsl(var(--background)) 100%)',
+              opacity: vignetteStrength / 100,
+            }}
+          />
+        )}
+
         <div className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-background/80 backdrop-blur-sm flex items-center space-x-2">
             <div className="flex items-center space-x-2 text-sm text-foreground">
                 {boardStack.map((board, index) => (
@@ -459,7 +464,7 @@ export default function CanvasCraftPage() {
             ))}
         </div>
 
-        {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} />}
+        {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} accentColor={accentColor} />}
         
         <Toolbar settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
     </main>

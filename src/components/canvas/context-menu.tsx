@@ -12,9 +12,10 @@ interface ContextMenuProps {
   y: number;
   onAction: (action: CanvasItemType | 'connect' | 'delete') => void;
   isItemMenu: boolean;
+  accentColor?: string;
 }
 
-const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu }) => {
+const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, accentColor }) => {
   const menuItems = [
     { label: 'Add Text', icon: Type, action: 'text' as CanvasItemType },
     { label: 'Add Image', icon: Image, action: 'image' as CanvasItemType },
@@ -23,6 +24,13 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu }) => {
   
   const connectionItem = { label: 'Connect', icon: ArrowRight, action: 'connect' };
   const deleteItem = { label: 'Delete', icon: Trash2, action: 'delete' };
+
+  const getDeleteColor = () => {
+    if (!accentColor) return 'hsl(var(--destructive))';
+    const [h, s, l] = accentColor.split(' ').map(parseFloat);
+    // shift hue towards red and increase saturation for vibrancy
+    return `hsl(${(h - 30 + 360) % 360}, ${Math.min(100, s + 20)}%, ${l}%)`;
+  };
 
   return (
     <div style={{ top: y, left: x, position: 'fixed' }} className="z-50">
@@ -60,10 +68,11 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu }) => {
             <Separator className="my-1" />
             <Button
                 variant="ghost"
-                className="w-full justify-start text-destructive hover:text-destructive"
+                className="w-full justify-start"
+                style={{ color: getDeleteColor() }}
                 onClick={(e) => {
-                e.stopPropagation();
-                onAction(deleteItem.action);
+                  e.stopPropagation();
+                  onAction(deleteItem.action);
                 }}
             >
                 <deleteItem.icon className="w-4 h-4 mr-2" />

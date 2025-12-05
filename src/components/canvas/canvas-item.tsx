@@ -122,7 +122,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
             onClick={(e) => e.stopPropagation()} // Prevent click from bubbling to parent
           />
         ) : (
-          <div className="w-full h-full p-2 whitespace-pre-wrap">{item.content}</div>
+          <div className="w-full h-full p-4 whitespace-pre-wrap">{item.content}</div>
         );
       case 'image':
         return (
@@ -131,7 +131,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
             alt="User uploaded content"
             width={item.width}
             height={item.height}
-            className="object-cover w-full h-full rounded-md"
+            className="object-cover w-full h-full"
             unoptimized // for blob urls
             data-ai-hint="abstract art"
           />
@@ -168,8 +168,8 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
         transformOrigin: 'top left',
       }}
       className={cn(
-        'cursor-pointer transition-shadow duration-200',
-        isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background rounded-lg shadow-2xl',
+        'cursor-pointer transition-shadow duration-200 rounded-lg',
+        isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl',
         !isSelected && 'hover:shadow-xl'
       )}
       onMouseDown={handleMouseDown}
@@ -180,8 +180,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
       <Card
         className={cn(
           "w-full h-full overflow-hidden transition-colors duration-200",
-          item.type === 'text' && !isEditing && 'p-0',
-          item.type === 'text' && isEditing && 'p-2',
+          item.type === 'image' && 'p-0',
           item.type !== 'text' && item.type === 'board' && 'flex items-center justify-center',
         )}
       >
