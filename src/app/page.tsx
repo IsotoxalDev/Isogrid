@@ -72,6 +72,7 @@ export default function CanvasCraftPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const isPanning = useRef(false);
   const lastPanPoint = useRef<Point>({ x: 0, y: 0 });
+  const rightClickDragInfo = useRef<{isDragging: boolean, itemId?: string}>({ isDragging: false });
   const { toast } = useToast();
 
   const currentBoard = boardStack[boardStack.length - 1];
@@ -106,9 +107,12 @@ export default function CanvasCraftPage() {
   
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
-    if (e.button === 1 || e.metaKey || e.ctrlKey) { // Middle mouse or cmd/ctrl key
+    if (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey))) { // Middle mouse or cmd/ctrl + left click
       isPanning.current = true;
       lastPanPoint.current = { x: e.clientX, y: e.clientY };
+    }
+    if (e.button === 2) {
+        rightClickDragInfo.current = { isDragging: false };
     }
   };
   
@@ -119,25 +123,32 @@ export default function CanvasCraftPage() {
       lastPanPoint.current = { x: e.clientX, y: e.clientY };
       setViewState(vs => ({ ...vs, pan: { x: vs.pan.x + dx, y: vs.pan.y + dy } }));
     }
+    // Set dragging state on the first mouse move during a right click
+    if(e.buttons === 2 && !rightClickDragInfo.current.isDragging) {
+        rightClickDragInfo.current.isDragging = true;
+    }
   };
   
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: MouseEvent<HTMLDivElement>) => {
     isPanning.current = false;
+    // If not a drag, show context menu on right-click up
+    if (e.button === 2 && !rightClickDragInfo.current.isDragging) {
+        // Find if a specific item was clicked
+        const clickedItem = (e.target as HTMLElement).closest('[data-item-id]');
+        const itemId = clickedItem ? clickedItem.getAttribute('data-item-id') : undefined;
+
+        if (connectionState.from) { // Cancel connection
+            setConnectionState({});
+        } else {
+            setContextMenu({ x: e.clientX, y: e.clientY, show: true, itemId: itemId || undefined });
+        }
+    }
+    // Reset right-click drag info
+    rightClickDragInfo.current = { isDragging: false };
   };
   
   const handleContextMenu = (e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (connectionState.from) { // Cancel connection
-        setConnectionState({});
-        return;
-    }
-    setContextMenu({ x: e.clientX, y: e.clientY, show: true });
-  };
-
-  const handleItemContextMenu = (e: MouseEvent, itemId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({ x: e.clientX, y: e.clientY, show: true, itemId });
   };
 
   const addItem = (type: CanvasItemType, position: Point) => {
@@ -180,6 +191,10 @@ export default function CanvasCraftPage() {
 
   const handleItemDrag = (id: string, newPosition: Point) => {
     setItems(items => items.map(item => item.id === id ? { ...item, position: newPosition } : item));
+  };
+
+  const handleItemResize = (id: string, newWidth: number, newHeight: number) => {
+    setItems(items => items.map(item => item.id === id ? { ...item, width: newWidth, height: newHeight } : item));
   };
   
   const handleItemContentChange = (id: string, content: string) => {
@@ -330,10 +345,11 @@ export default function CanvasCraftPage() {
                     item={item}
                     zoom={viewState.zoom}
                     onDrag={handleItemDrag}
+                    onResize={handleItemResize}
                     onContentChange={handleItemContentChange}
                     onClick={() => handleItemClick(item.id)}
                     onDoubleClick={() => handleItemDoubleClick(item)}
-                    onContextMenu={(e) => handleItemContextMenu(e, item.id)}
+                    onContextMenu={(e) => e.preventDefault()}
                     isSelected={connectionState.from === item.id}
                 />
             ))}

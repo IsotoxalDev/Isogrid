@@ -11,6 +11,7 @@ interface CanvasItemProps {
   item: CanvasItemData;
   zoom: number;
   onDrag: (id: string, newPosition: Point) => void;
+  onResize: (id: string, newWidth: number, newHeight: number) => void;
   onContentChange: (id: string, newContent: string) => void;
   onClick: () => void;
   onDoubleClick: () => void;
@@ -18,39 +19,67 @@ interface CanvasItemProps {
   isSelected: boolean;
 }
 
-const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onContentChange, onClick, onDoubleClick, onContextMenu, isSelected }) => {
+const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onResize, onContentChange, onClick, onDoubleClick, onContextMenu, isSelected }) => {
   const dragStartPos = useRef<Point>({ x: 0, y: 0 });
   const itemStartPos = useRef<Point>({ x: 0, y: 0 });
+  const resizeStartSize = useRef({ width: 0, height: 0 });
   const [isEditing, setIsEditing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  const MIN_SIZE = 40;
 
   const handleMouseDown = (e: MouseEvent) => {
-    // Prevent initiating drag from form elements
+    // Prevent initiating drag/resize from form elements
     if ((e.target as HTMLElement).tagName.toLowerCase() === 'textarea' || (e.target as HTMLElement).closest('.no-drag')) {
       return;
     }
+
     e.stopPropagation();
-    e.preventDefault();
-
+    
     dragStartPos.current = { x: e.clientX, y: e.clientY };
-    itemStartPos.current = item.position;
 
-    const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
-      const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
-      const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
-      onDrag(item.id, {
-        x: itemStartPos.current.x + dx,
-        y: itemStartPos.current.y + dy,
-      });
-    };
+    if (e.button === 0) { // Left click for dragging
+        e.preventDefault();
+        itemStartPos.current = item.position;
 
-    const handleMouseUp = () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
+        const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
+            const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
+            const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
+            onDrag(item.id, {
+                x: itemStartPos.current.x + dx,
+                y: itemStartPos.current.y + dy,
+            });
+        };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+        const handleMouseUp = () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+    } else if (e.button === 2) { // Right click for resizing
+        e.preventDefault();
+        resizeStartSize.current = { width: item.width, height: item.height };
+        
+        const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
+            const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
+            const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
+            
+            const newWidth = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
+            const newHeight = Math.max(MIN_SIZE, resizeStartSize.current.height + dy);
+
+            onResize(item.id, newWidth, newHeight);
+        };
+
+        const handleMouseUp = () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+    }
   };
 
   const handleItemDoubleClick = () => {
@@ -120,6 +149,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onContentChange, 
 
   return (
     <div
+      data-item-id={item.id}
       style={{
         position: 'absolute',
         left: item.position.x,
