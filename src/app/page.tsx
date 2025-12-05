@@ -57,7 +57,7 @@ const INITIAL_ARROWS: ArrowData[] = [
   { id: 'arrow-1', from: 'item-1', to: 'item-2', parentId: null },
 ];
 
-const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '73 56% 60%', showGrid: true, vignetteStrength: 100 } };
+const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '73 56% 60%', showGrid: true, gridStyle: 'dots', gridOpacity: 0.5, vignetteStrength: 100 } };
 
 const GRID_SIZE = 40;
 
@@ -137,27 +137,31 @@ export default function CanvasCraftPage() {
   const filteredArrows = arrows.filter(arrow => arrow.parentId === currentBoardId);
 
   const screenToCanvas = useCallback((screenPoint: Point): Point => {
+    if (!canvasRef.current) return screenPoint;
+    const rect = canvasRef.current.getBoundingClientRect();
     return {
-      x: (screenPoint.x - viewState.pan.x) / viewState.zoom,
-      y: (screenPoint.y - viewState.pan.y) / viewState.zoom,
+      x: (screenPoint.x - viewState.pan.x - rect.left) / viewState.zoom,
+      y: (screenPoint.y - viewState.pan.y - rect.top) / viewState.zoom,
     };
   }, [viewState]);
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
     const zoomFactor = 1.1;
     const newZoom = e.deltaY < 0 ? viewState.zoom * zoomFactor : viewState.zoom / zoomFactor;
     const clampedZoom = Math.max(0.1, Math.min(5, newZoom));
 
-    const mousePos = { x: e.clientX, y: e.clientY };
-    const mouseOnCanvasBeforeZoom = screenToCanvas(mousePos);
+    const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const mouseOnCanvasBeforeZoom = screenToCanvas({x: e.clientX, y: e.clientY});
     
     const newPan = {
       x: mousePos.x - mouseOnCanvasBeforeZoom.x * clampedZoom,
       y: mousePos.y - mouseOnCanvasBeforeZoom.y * clampedZoom
     };
 
-    setViewState({ zoom: clampedZoom, pan: newPan });
+    setViewState({ zoom: clampedZoom, pan: {x: newPan.x + rect.left, y: newPan.y + rect.top } });
   };
   
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
@@ -165,6 +169,7 @@ export default function CanvasCraftPage() {
     if (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey))) {
       isPanning.current = true;
       lastPanPoint.current = { x: e.clientX, y: e.clientY };
+      e.currentTarget.style.cursor = 'grabbing';
     }
     if (e.button === 2) {
         rightClickDragInfo.current = { isDragging: false };
@@ -185,6 +190,8 @@ export default function CanvasCraftPage() {
   
   const handleMouseUp = (e: MouseEvent<HTMLDivElement>) => {
     isPanning.current = false;
+    e.currentTarget.style.cursor = 'grab';
+    
     if (e.button === 2 && !rightClickDragInfo.current.isDragging) {
         const clickedItem = (e.target as HTMLElement).closest('[data-item-id]');
         const itemId = clickedItem ? clickedItem.getAttribute('data-item-id') : undefined;
@@ -268,7 +275,7 @@ export default function CanvasCraftPage() {
   
   const handleItemDoubleClick = (item: CanvasItemData) => {
       if (item.type === 'board') {
-          const newBoard: Board = {id: item.id, name: item.content, settings: { showGrid: true, vignetteStrength: 100 }};
+          const newBoard: Board = {id: item.id, name: item.content, settings: { accentColor: accentColor, showGrid: true, gridStyle: 'dots', gridOpacity: 0.5, vignetteStrength: 100 }};
           setBoardStack(stack => [...stack, newBoard]);
           setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
           setHistory([{ items, arrows }]);
@@ -391,82 +398,84 @@ export default function CanvasCraftPage() {
 
   return (
     <main
-      ref={canvasRef}
-      className={cn(
-        "w-screen h-screen overflow-hidden bg-background relative cursor-grab active:cursor-grabbing",
-        {'cursor-crosshair': connectionState.from !== undefined }
-      )}
-      onWheel={handleWheel}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onContextMenu={handleContextMenu}
-      onClick={() => contextMenu.show && setContextMenu({ ...contextMenu, show: false })}
+      className="w-screen h-screen overflow-hidden bg-background relative"
     >
-        {showGrid && (
+      <div
+        ref={canvasRef}
+        className={cn(
+          "w-full h-full cursor-grab",
+          {'cursor-crosshair': connectionState.from !== undefined }
+        )}
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onContextMenu={handleContextMenu}
+        onClick={() => contextMenu.show && setContextMenu({ ...contextMenu, show: false })}
+      >
+          {showGrid && (
+              <div
+                  className="absolute inset-0 w-full h-full"
+                  style={gridStyleProps}
+              />
+          )}
+
+          {vignetteStrength > 0 && (
             <div
-                className="absolute inset-0 w-full h-full"
-                style={gridStyleProps}
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              style={{
+                background: `radial-gradient(circle, transparent 40%, hsl(var(--background) / ${vignetteStrength/100}) 100%)`,
+                opacity: 1,
+              }}
             />
-        )}
+          )}
+          <div 
+            className="w-full h-full relative"
+            style={{ transform: `translate(${viewState.pan.x}px, ${viewState.pan.y}px) scale(${viewState.zoom})`, transformOrigin: '0 0' }}
+          >
+              <ArrowRenderer arrows={filteredArrows} items={filteredItems} />
 
-        {vignetteStrength > 0 && (
-          <div
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            style={{
-              background: 'radial-gradient(circle, transparent 40%, hsl(var(--background)) 100%)',
-              opacity: vignetteStrength / 100,
-            }}
-          />
-        )}
+              {filteredItems.map(item => (
+                  <CanvasItem 
+                      key={item.id}
+                      item={item}
+                      zoom={viewState.zoom}
+                      onUpdate={handleItemUpdate}
+                      onClick={() => handleItemClick(item.id)}
+                      onDoubleClick={() => handleItemDoubleClick(item)}
+                      onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({x: e.clientX, y: e.clientY, show: true, itemId: item.id})}}
+                      isSelected={connectionState.from === item.id}
+                  />
+              ))}
+          </div>
 
-        <div className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-background/80 backdrop-blur-sm flex items-center space-x-2">
-            <div className="flex items-center space-x-2 text-sm text-foreground">
-                {boardStack.map((board, index) => (
-                    <div key={board.id} className="flex items-center space-x-2">
-                        {index > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-                        <Button variant="link" className="p-0 h-auto text-sm" onClick={() => navigateToBoard(index)}>
-                          {board.id === 'root' && <Home className="w-4 h-4 mr-2" />}
-                          {board.name}
-                        </Button>
-                    </div>
-                ))}
-            </div>
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                        <Cog className="w-5 h-5"/>
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80">
-                   <SettingsPopover settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
-                </PopoverContent>
-            </Popover>
-        </div>
-
-        <div 
-          className="w-full h-full"
-          style={{ transform: `translate(${viewState.pan.x}px, ${viewState.pan.y}px) scale(${viewState.zoom})`, transformOrigin: '0 0' }}
-        >
-            <ArrowRenderer arrows={filteredArrows} items={filteredItems} />
-
-            {filteredItems.map(item => (
-                <CanvasItem 
-                    key={item.id}
-                    item={item}
-                    zoom={viewState.zoom}
-                    onUpdate={handleItemUpdate}
-                    onClick={() => handleItemClick(item.id)}
-                    onDoubleClick={() => handleItemDoubleClick(item)}
-                    onContextMenu={(e) => e.preventDefault()}
-                    isSelected={connectionState.from === item.id}
-                />
-            ))}
-        </div>
-
-        {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} accentColor={accentColor} />}
-        
-        <Toolbar settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
+      </div>
+      <div className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-background/80 backdrop-blur-sm flex items-center space-x-2">
+          <div className="flex items-center space-x-2 text-sm text-foreground">
+              {boardStack.map((board, index) => (
+                  <div key={board.id} className="flex items-center space-x-2">
+                      {index > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                      <Button variant="link" className="p-0 h-auto text-sm" onClick={() => navigateToBoard(index)}>
+                        {board.id === 'root' && <Home className="w-4 h-4 mr-2" />}
+                        {board.name}
+                      </Button>
+                  </div>
+              ))}
+          </div>
+          <Popover>
+              <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                      <Cog className="w-5 h-5"/>
+                  </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                 <SettingsPopover settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
+              </PopoverContent>
+          </Popover>
+      </div>
+      {contextMenu.show && <ContextMenu x={contextMenu.x} y={context.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} accentColor={accentColor} />}
+      
+      <Toolbar settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
     </main>
   );
 }

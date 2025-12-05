@@ -36,7 +36,6 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
     dragStartPos.current = { x: e.clientX, y: e.clientY };
 
     const isLeftClick = e.button === 0;
-    const isRightClick = e.button === 2;
     
     if (isLeftClick) { // Left click for dragging
         e.preventDefault();
@@ -49,36 +48,6 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
                 x: itemStartPos.current.x + dx,
                 y: itemStartPos.current.y + dy,
             }});
-        };
-
-        const handleMouseUp = () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
-    } else if (isRightClick) { // Right click for resizing
-        e.preventDefault();
-        resizeStartSize.current = { width: item.width, height: item.height };
-        
-        const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
-            const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
-            const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
-            
-            let newWidth = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
-            let newHeight = Math.max(MIN_SIZE, resizeStartSize.current.height + dy);
-
-            if (moveEvent.shiftKey) {
-              const aspectRatio = resizeStartSize.current.width / resizeStartSize.current.height;
-              if (Math.abs(dx) > Math.abs(dy)) {
-                  newHeight = newWidth / aspectRatio;
-              } else {
-                  newWidth = newHeight * aspectRatio;
-              }
-            }
-
-            onUpdate({ id: item.id, width: newWidth, height: newHeight });
         };
 
         const handleMouseUp = () => {
@@ -108,6 +77,41 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
   const handleTextBlur = () => {
     setIsEditing(false);
   };
+  
+  const handleResizeMouseDown = (e: MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    resizeStartSize.current = { width: item.width, height: item.height };
+    
+    const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
+        const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
+        const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
+        
+        let newWidth = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
+        let newHeight = Math.max(MIN_SIZE, resizeStartSize.current.height + dy);
+
+        if (moveEvent.shiftKey) {
+          const aspectRatio = resizeStartSize.current.width / resizeStartSize.current.height;
+          if (Math.abs(dx) > Math.abs(dy)) {
+              newHeight = newWidth / aspectRatio;
+          } else {
+              newWidth = newHeight * aspectRatio;
+          }
+        }
+
+        onUpdate({ id: item.id, width: newWidth, height: newHeight });
+    };
+
+    const handleMouseUp = () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  }
 
   const renderContent = () => {
     switch (item.type) {
@@ -131,7 +135,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
             alt="User uploaded content"
             width={item.width}
             height={item.height}
-            className="object-cover w-full h-full"
+            className="object-cover w-full h-full rounded-md"
             unoptimized // for blob urls
             data-ai-hint="abstract art"
           />
@@ -144,8 +148,6 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
               suppressContentEditableWarning
               className="outline-none focus:ring-2 focus:ring-primary rounded-sm px-1 no-drag"
               onBlur={(e) => onUpdate({ id: item.id, content: e.currentTarget.textContent || ''})}
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
             >
               {item.content}
             </CardTitle>
@@ -168,7 +170,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
         transformOrigin: 'top left',
       }}
       className={cn(
-        'cursor-pointer transition-shadow duration-200 rounded-lg',
+        'cursor-grab active:cursor-grabbing transition-shadow duration-200 rounded-lg',
         isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl',
         !isSelected && 'hover:shadow-xl'
       )}
@@ -179,13 +181,17 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
     >
       <Card
         className={cn(
-          "w-full h-full overflow-hidden transition-colors duration-200",
+          "w-full h-full overflow-hidden transition-colors duration-200 rounded-md",
           item.type === 'image' && 'p-0',
           item.type !== 'text' && item.type === 'board' && 'flex items-center justify-center',
         )}
       >
         {renderContent()}
       </Card>
+      <div 
+        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
+        onMouseDown={handleResizeMouseDown}
+      />
     </div>
   );
 };
