@@ -23,6 +23,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
   const resizeStartSize = useRef({ width: 0, height: 0 });
   const [isEditing, setIsEditing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const cardTitleRef = useRef<HTMLDivElement>(null);
   
   const MIN_SIZE = 40;
 
@@ -61,18 +62,23 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
   };
 
   const handleItemDoubleClick = () => {
-    if (item.type === 'text') {
+    if (item.type === 'text' || item.type === 'board') {
       setIsEditing(true);
     }
     onDoubleClick();
   };
 
   useEffect(() => {
-    if (isEditing && textareaRef.current) {
+    if (isEditing) {
+      if (item.type === 'text' && textareaRef.current) {
         textareaRef.current.focus();
         textareaRef.current.select();
+      } else if (item.type === 'board' && cardTitleRef.current) {
+        cardTitleRef.current.focus();
+        document.execCommand('selectAll', false, undefined);
+      }
     }
-  }, [isEditing]);
+  }, [isEditing, item.type]);
   
   const handleTextBlur = () => {
     setIsEditing(false);
@@ -143,11 +149,15 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
       case 'board':
         return (
           <CardHeader>
-            <CardTitle 
-              contentEditable
+            <CardTitle
+              ref={cardTitleRef}
+              contentEditable={isEditing}
               suppressContentEditableWarning
-              className="outline-none focus:ring-2 focus:ring-primary rounded-sm px-1 no-drag"
-              onBlur={(e) => onUpdate({ id: item.id, content: e.currentTarget.textContent || ''})}
+              className={cn("outline-none rounded-sm px-1", isEditing && "ring-2 ring-primary no-drag")}
+              onBlur={(e) => {
+                onUpdate({ id: item.id, content: e.currentTarget.textContent || ''});
+                setIsEditing(false);
+              }}
             >
               {item.content}
             </CardTitle>
@@ -181,9 +191,10 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
     >
       <Card
         className={cn(
-          "w-full h-full overflow-hidden transition-colors duration-200 rounded-md",
-          item.type === 'image' && 'p-0',
-          item.type !== 'text' && item.type === 'board' && 'flex items-center justify-center',
+          "w-full h-full overflow-hidden transition-colors duration-200 rounded-lg shadow-md",
+          item.type === 'image' && 'p-0 border-0',
+          item.type === 'text' && 'bg-background/80 backdrop-blur-sm',
+          item.type === 'board' && 'flex items-center justify-center bg-background/80 backdrop-blur-sm',
         )}
       >
         {renderContent()}

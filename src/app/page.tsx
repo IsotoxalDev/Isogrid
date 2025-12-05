@@ -30,7 +30,7 @@ const INITIAL_ITEMS: CanvasItemData[] = [
     position: { x: 100, y: 150 },
     width: 250,
     height: 120,
-    content: 'Welcome to CanvasCraft! \n\nRight-click to add items. Double-click a board to enter it.',
+    content: 'Welcome to CanvasCraft! \n\nRight-click to add items. Double-click an item to edit it.',
     parentId: null,
   },
   {
@@ -231,10 +231,15 @@ export default function CanvasCraftPage() {
     setContextMenu({ ...contextMenu, show: false });
   }
 
-  const handleContextMenuAction = (action: CanvasItemType | 'connect' | 'delete') => {
+  const handleContextMenuAction = (action: CanvasItemType | 'connect' | 'delete' | 'enter') => {
     if (action === 'delete' && contextMenu.itemId) {
       deleteItem(contextMenu.itemId);
       return;
+    }
+    if (action === 'enter' && contextMenu.itemId) {
+        const item = items.find(i => i.id === contextMenu.itemId);
+        if (item) handleItemDoubleClick(item);
+        return;
     }
 
     const canvasPos = screenToCanvas({ x: contextMenu.x, y: contextMenu.y });
@@ -243,7 +248,7 @@ export default function CanvasCraftPage() {
             setConnectionState({ from: contextMenu.itemId });
         }
         setContextMenu({ ...contextMenu, show: false });
-    } else if (action !== 'delete') {
+    } else if (action !== 'delete' && action !== 'enter') {
         addItem(action, canvasPos);
     }
   };
@@ -442,7 +447,11 @@ export default function CanvasCraftPage() {
                       zoom={viewState.zoom}
                       onUpdate={handleItemUpdate}
                       onClick={() => handleItemClick(item.id)}
-                      onDoubleClick={() => handleItemDoubleClick(item)}
+                      onDoubleClick={() => {
+                        if (item.type !== 'board') {
+                          handleItemDoubleClick(item)
+                        }
+                      }}
                       onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({x: e.clientX, y: e.clientY, show: true, itemId: item.id})}}
                       isSelected={connectionState.from === item.id}
                   />
@@ -473,7 +482,7 @@ export default function CanvasCraftPage() {
               </PopoverContent>
           </Popover>
       </div>
-      {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} accentColor={accentColor} />}
+      {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} itemType={items.find(i=>i.id===contextMenu.itemId)?.type} accentColor={accentColor} />}
       
       <Toolbar settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
     </main>

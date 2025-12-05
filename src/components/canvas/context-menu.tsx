@@ -1,7 +1,7 @@
 "use client";
 
 import type { FC } from 'react';
-import { Type, Image, Square, ArrowRight, Trash2 } from 'lucide-react';
+import { Type, Image, Square, ArrowRight, Trash2, LogIn } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -10,12 +10,13 @@ import { CanvasItemType } from '@/lib/types';
 interface ContextMenuProps {
   x: number;
   y: number;
-  onAction: (action: CanvasItemType | 'connect' | 'delete') => void;
+  onAction: (action: CanvasItemType | 'connect' | 'delete' | 'enter') => void;
   isItemMenu: boolean;
+  itemType?: CanvasItemType;
   accentColor?: string;
 }
 
-const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, accentColor }) => {
+const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemType, accentColor }) => {
   const menuItems = [
     { label: 'Add Text', icon: Type, action: 'text' as CanvasItemType },
     { label: 'Add Image', icon: Image, action: 'image' as CanvasItemType },
@@ -24,6 +25,7 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, accentC
   
   const connectionItem = { label: 'Connect', icon: ArrowRight, action: 'connect' };
   const deleteItem = { label: 'Delete', icon: Trash2, action: 'delete' };
+  const enterBoardItem = { label: 'Enter Board', icon: LogIn, action: 'enter' };
 
   const getDeleteColor = () => {
     if (!accentColor) return 'hsl(var(--destructive))';
@@ -49,6 +51,21 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, accentC
             {item.label}
           </Button>
         ))}
+
+        {isItemMenu && itemType === 'board' && (
+            <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={(e) => {
+                e.stopPropagation();
+                onAction(enterBoardItem.action);
+                }}
+            >
+                <enterBoardItem.icon className="w-4 h-4 mr-2" />
+                {enterBoardItem.label}
+            </Button>
+        )}
+
         {isItemMenu && (
           <Button
             variant="ghost"
