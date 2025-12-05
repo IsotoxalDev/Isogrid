@@ -1,7 +1,7 @@
 "use client";
 
 import type { FC } from 'react';
-import { Type, Image, Square, ArrowRight } from 'lucide-react';
+import { Type, Image, Square, ArrowRight, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -10,10 +10,11 @@ import { CanvasItemType } from '@/lib/types';
 interface ContextMenuProps {
   x: number;
   y: number;
-  onAction: (action: CanvasItemType | 'connect') => void;
+  onAction: (action: CanvasItemType | 'connect' | 'delete') => void;
+  isItemMenu: boolean;
 }
 
-const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction }) => {
+const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu }) => {
   const menuItems = [
     { label: 'Add Text', icon: Type, action: 'text' as CanvasItemType },
     { label: 'Add Image', icon: Image, action: 'image' as CanvasItemType },
@@ -21,11 +22,12 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction }) => {
   ];
   
   const connectionItem = { label: 'Connect', icon: ArrowRight, action: 'connect' };
+  const deleteItem = { label: 'Delete', icon: Trash2, action: 'delete' };
 
   return (
     <div style={{ top: y, left: x, position: 'fixed' }} className="z-50">
       <Card className="w-48 p-1 shadow-xl">
-        {menuItems.map((item) => (
+        {!isItemMenu && menuItems.map((item) => (
           <Button
             key={item.label}
             variant="ghost"
@@ -39,7 +41,8 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction }) => {
             {item.label}
           </Button>
         ))}
-        <Separator className="my-1" />
+        {!isItemMenu && <Separator className="my-1" />}
+        
         <Button
           variant="ghost"
           className="w-full justify-start"
@@ -51,6 +54,23 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction }) => {
           <connectionItem.icon className="w-4 h-4 mr-2" />
           {connectionItem.label}
         </Button>
+        
+        {isItemMenu && (
+            <>
+            <Separator className="my-1" />
+            <Button
+                variant="ghost"
+                className="w-full justify-start text-destructive hover:text-destructive"
+                onClick={(e) => {
+                e.stopPropagation();
+                onAction(deleteItem.action);
+                }}
+            >
+                <deleteItem.icon className="w-4 h-4 mr-2" />
+                {deleteItem.label}
+            </Button>
+            </>
+        )}
       </Card>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type FC, type MouseEvent } from 'react';
+import { useRef, type FC, type MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { CanvasItemData, Point } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -14,12 +14,15 @@ interface CanvasItemProps {
   onContentChange: (id: string, newContent: string) => void;
   onClick: () => void;
   onDoubleClick: () => void;
+  onContextMenu: (event: MouseEvent) => void;
   isSelected: boolean;
 }
 
-const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onContentChange, onClick, onDoubleClick, isSelected }) => {
+const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onContentChange, onClick, onDoubleClick, onContextMenu, isSelected }) => {
   const dragStartPos = useRef<Point>({ x: 0, y: 0 });
   const itemStartPos = useRef<Point>({ x: 0, y: 0 });
+  const [isEditing, setIsEditing] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleMouseDown = (e: MouseEvent) => {
     // Prevent initiating drag from form elements
@@ -50,16 +53,38 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onContentChange, 
     window.addEventListener('mouseup', handleMouseUp);
   };
 
+  const handleItemDoubleClick = () => {
+    if (item.type === 'text') {
+      setIsEditing(true);
+    }
+    onDoubleClick();
+  };
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.select();
+    }
+  }, [isEditing]);
+  
+  const handleTextBlur = () => {
+    setIsEditing(false);
+  };
+
   const renderContent = () => {
     switch (item.type) {
       case 'text':
-        return (
+        return isEditing ? (
           <Textarea
+            ref={textareaRef}
             value={item.content}
             onChange={(e) => onContentChange(item.id, e.target.value)}
+            onBlur={handleTextBlur}
             className="w-full h-full bg-transparent border-0 resize-none focus:ring-0 focus-visible:ring-offset-0 focus-visible:ring-0"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()} // Prevent click from bubbling to parent
           />
+        ) : (
+          <div className="w-full h-full p-2 whitespace-pre-wrap">{item.content}</div>
         );
       case 'image':
         return (
@@ -110,13 +135,15 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onContentChange, 
       )}
       onMouseDown={handleMouseDown}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick(); }}
+      onDoubleClick={(e) => { e.stopPropagation(); handleItemDoubleClick(); }}
+      onContextMenu={onContextMenu}
     >
       <Card
         className={cn(
           "w-full h-full overflow-hidden transition-colors duration-200",
-          item.type === 'text' && 'p-2',
-          item.type === 'board' && 'flex items-center justify-center',
+          item.type === 'text' && !isEditing && 'p-0',
+          item.type === 'text' && isEditing && 'p-2',
+          item.type !== 'text' && item.type === 'board' && 'flex items-center justify-center',
         )}
       >
         {renderContent()}

@@ -65,7 +65,7 @@ export default function CanvasCraftPage() {
   const [boardStack, setBoardStack] = useState<Board[]>([ROOT_BOARD]);
   
   const [viewState, setViewState] = useState<ViewState>({ zoom: 1, pan: { x: 0, y: 0 } });
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false });
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean, itemId?: string }>({ x: 0, y: 0, show: false });
   const [connectionState, setConnectionState] = useState<ConnectionState>({});
   const [showGrid, setShowGrid] = useState(true);
 
@@ -134,6 +134,12 @@ export default function CanvasCraftPage() {
     setContextMenu({ x: e.clientX, y: e.clientY, show: true });
   };
 
+  const handleItemContextMenu = (e: MouseEvent, itemId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, show: true, itemId });
+  };
+
   const addItem = (type: CanvasItemType, position: Point) => {
     const newItem: CanvasItemData = {
       id: `item-${Date.now()}`,
@@ -148,12 +154,24 @@ export default function CanvasCraftPage() {
     setContextMenu({ ...contextMenu, show: false });
   };
 
-  const handleContextMenuAction = (action: CanvasItemType | 'connect') => {
+  const deleteItem = (itemId: string) => {
+    setItems(items => items.filter(item => item.id !== itemId));
+    // Also delete arrows connected to this item
+    setArrows(arrows => arrows.filter(arrow => arrow.from !== itemId && arrow.to !== itemId));
+    setContextMenu({ ...contextMenu, show: false });
+  }
+
+  const handleContextMenuAction = (action: CanvasItemType | 'connect' | 'delete') => {
+    if (action === 'delete' && contextMenu.itemId) {
+      deleteItem(contextMenu.itemId);
+      return;
+    }
+
     const canvasPos = screenToCanvas({ x: contextMenu.x, y: contextMenu.y });
     if (action === 'connect') {
         setConnectionState({ from: undefined });
         setContextMenu({ ...contextMenu, show: false });
-    } else {
+    } else if (action !== 'delete') {
         addItem(action, canvasPos);
     }
   };
@@ -304,12 +322,13 @@ export default function CanvasCraftPage() {
                     onContentChange={handleItemContentChange}
                     onClick={() => handleItemClick(item.id)}
                     onDoubleClick={() => handleItemDoubleClick(item)}
+                    onContextMenu={(e) => handleItemContextMenu(e, item.id)}
                     isSelected={connectionState.from === item.id}
                 />
             ))}
         </div>
 
-        {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} />}
+        {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} />}
         
         <Toolbar showGrid={showGrid} onToggleGrid={() => setShowGrid(g => !g)} />
     </main>
