@@ -31,7 +31,17 @@ export interface ConnectionState {
   from?: string; // Starting item id for connection
 }
 
+export type GridStyle = 'dots' | 'lines';
+
+export interface BoardSettings {
+    accentColor?: string; // HSL string e.g., "240 5.9% 10%"
+    showGrid?: boolean;
+    gridStyle?: GridStyle;
+    gridOpacity?: number;
+}
+
 export interface Board {
     id: string;
     name: string;
+    settings: BoardSettings;
 }

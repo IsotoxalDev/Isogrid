@@ -10,16 +10,14 @@ import { Textarea } from '@/components/ui/textarea';
 interface CanvasItemProps {
   item: CanvasItemData;
   zoom: number;
-  onDrag: (id: string, newPosition: Point) => void;
-  onResize: (id: string, newWidth: number, newHeight: number) => void;
-  onContentChange: (id: string, newContent: string) => void;
+  onUpdate: (item: Partial<CanvasItemData> & { id: string }) => void;
   onClick: () => void;
   onDoubleClick: () => void;
   onContextMenu: (event: MouseEvent) => void;
   isSelected: boolean;
 }
 
-const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onResize, onContentChange, onClick, onDoubleClick, onContextMenu, isSelected }) => {
+const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoubleClick, onContextMenu, isSelected }) => {
   const dragStartPos = useRef<Point>({ x: 0, y: 0 });
   const itemStartPos = useRef<Point>({ x: 0, y: 0 });
   const resizeStartSize = useRef({ width: 0, height: 0 });
@@ -29,7 +27,6 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onResize, onConte
   const MIN_SIZE = 40;
 
   const handleMouseDown = (e: MouseEvent) => {
-    // Prevent initiating drag/resize from form elements
     if ((e.target as HTMLElement).tagName.toLowerCase() === 'textarea' || (e.target as HTMLElement).closest('.no-drag')) {
       return;
     }
@@ -38,17 +35,20 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onResize, onConte
     
     dragStartPos.current = { x: e.clientX, y: e.clientY };
 
-    if (e.button === 0) { // Left click for dragging
+    const isLeftClick = e.button === 0;
+    const isRightClick = e.button === 2;
+    
+    if (isLeftClick) { // Left click for dragging
         e.preventDefault();
         itemStartPos.current = item.position;
 
         const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
             const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
             const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
-            onDrag(item.id, {
+            onUpdate({ id: item.id, position: {
                 x: itemStartPos.current.x + dx,
                 y: itemStartPos.current.y + dy,
-            });
+            }});
         };
 
         const handleMouseUp = () => {
@@ -58,7 +58,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onResize, onConte
 
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
-    } else if (e.button === 2) { // Right click for resizing
+    } else if (isRightClick) { // Right click for resizing
         e.preventDefault();
         resizeStartSize.current = { width: item.width, height: item.height };
         
@@ -71,7 +71,6 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onResize, onConte
 
             if (moveEvent.shiftKey) {
               const aspectRatio = resizeStartSize.current.width / resizeStartSize.current.height;
-              // Determine dominant axis of mouse movement
               if (Math.abs(dx) > Math.abs(dy)) {
                   newHeight = newWidth / aspectRatio;
               } else {
@@ -79,7 +78,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onResize, onConte
               }
             }
 
-            onResize(item.id, newWidth, newHeight);
+            onUpdate({ id: item.id, width: newWidth, height: newHeight });
         };
 
         const handleMouseUp = () => {
@@ -117,7 +116,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onResize, onConte
           <Textarea
             ref={textareaRef}
             value={item.content}
-            onChange={(e) => onContentChange(item.id, e.target.value)}
+            onChange={(e) => onUpdate({ id: item.id, content: e.target.value })}
             onBlur={handleTextBlur}
             className="w-full h-full bg-transparent border-0 resize-none focus:ring-0 focus-visible:ring-offset-0 focus-visible:ring-0"
             onClick={(e) => e.stopPropagation()} // Prevent click from bubbling to parent
@@ -144,9 +143,9 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onResize, onConte
               contentEditable
               suppressContentEditableWarning
               className="outline-none focus:ring-2 focus:ring-primary rounded-sm px-1 no-drag"
-              onBlur={(e) => onContentChange(item.id, e.currentTarget.textContent || '')}
-              onClick={(e) => e.stopPropagation()} // Prevent click from bubbling to parent
-              onMouseDown={(e) => e.stopPropagation()} // Prevent drag
+              onBlur={(e) => onUpdate({ id: item.id, content: e.currentTarget.textContent || ''})}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
             >
               {item.content}
             </CardTitle>
