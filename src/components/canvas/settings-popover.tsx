@@ -11,14 +11,14 @@ interface SettingsPopoverProps {
 }
 
 const PRESET_COLORS = [
-    "73 56% 60%", // Default Green
-    "210 40% 96.1%", // Light
-    "0 84.2% 60.2%", // Red
-    "221.2 83.2% 53.3%", // Blue
-    "47.9 95.8% 53.1%", // Yellow
-    "142.1 76.2% 36.3%", // Green
-    "262.1 83.3% 57.8%", // Purple
-    "346.8 77.2% 49.8%", // Pink
+    "0 59% 63%", // #D86A6A
+    "30 73% 62%", // #E4A35A
+    "54 62% 61%", // #DCCF5A
+    "72 56% 63%", // #C5D868
+    "176 43% 62%", // #74C9C4
+    "223 57% 63%", // #6B8FD8
+    "274 54% 69%", // #A58BD8
+    "326 55% 69%", // #D88CB5
 ];
 
 const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange }) => {
