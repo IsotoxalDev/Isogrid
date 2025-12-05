@@ -57,7 +57,7 @@ const INITIAL_ARROWS: ArrowData[] = [
   { id: 'arrow-1', from: 'item-1', to: 'item-2', parentId: null },
 ];
 
-const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '73 56% 60%' } };
+const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '73 56% 60%', showGrid: true } };
 
 const GRID_SIZE = 40;
 
@@ -89,7 +89,7 @@ export default function CanvasCraftPage() {
   
   // Combine settings from board stack
   const combinedSettings = boardStack.reduce((acc, board) => ({ ...acc, ...board.settings }), {} as BoardSettings);
-  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteStrength = 75 } = combinedSettings;
+  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteStrength = 25 } = combinedSettings;
 
 
   const updateState = (newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]), newArrows: ArrowData[] | ((prev: ArrowData[]) => ArrowData[])) => {
@@ -268,7 +268,7 @@ export default function CanvasCraftPage() {
   
   const handleItemDoubleClick = (item: CanvasItemData) => {
       if (item.type === 'board') {
-          const newBoard: Board = {id: item.id, name: item.content, settings: {}};
+          const newBoard: Board = {id: item.id, name: item.content, settings: { showGrid: true }};
           setBoardStack(stack => [...stack, newBoard]);
           setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
           setHistory([{ items, arrows }]);
@@ -382,7 +382,8 @@ export default function CanvasCraftPage() {
   const gridBackgroundImage = gridStyle === 'dots' 
     ? `radial-gradient(hsl(var(--muted-foreground) / ${gridOpacity}) 1px, transparent 0)`
     : `linear-gradient(hsl(var(--muted-foreground) / ${gridOpacity}) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--muted-foreground) / ${gridOpacity}) 1px, transparent 1px)`;
-
+  
+  const invertedVignette = 100 - vignetteStrength;
 
   return (
     <main
@@ -405,8 +406,8 @@ export default function CanvasCraftPage() {
                     backgroundImage: gridBackgroundImage,
                     backgroundSize: `${scaledGridSize}px ${scaledGridSize}px`,
                     backgroundPosition: `${viewState.pan.x % scaledGridSize}px ${viewState.pan.y % scaledGridSize}px`,
-                    maskImage: `radial-gradient(circle, white, transparent ${vignetteStrength}%)`,
-                    WebkitMaskImage: `radial-gradient(circle, white, transparent ${vignetteStrength}%)`,
+                    maskImage: `radial-gradient(circle, white, transparent ${invertedVignette}%)`,
+                    WebkitMaskImage: `radial-gradient(circle, white, transparent ${invertedVignette}%)`,
                 }}
             />
         )}

@@ -63,7 +63,7 @@ const GridSettings: FC<GridSettingsProps> = ({ settings, onSettingsChange }) => 
             min={0}
             max={100}
             step={1}
-            defaultValue={[settings.vignetteStrength || 75]}
+            defaultValue={[settings.vignetteStrength || 25]}
             onValueChange={(value) => onSettingsChange({ vignetteStrength: value[0] })}
             />
         </div>
