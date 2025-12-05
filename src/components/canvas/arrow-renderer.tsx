@@ -51,13 +51,21 @@ const ArrowRenderer: FC<ArrowRendererProps> = ({ arrows, items }) => {
         const p1 = getCenter(fromItem);
         const p2 = getCenter(toItem);
         
+        // A simple way to not draw the line right to the center, but to the edge
+        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+        const toItemRadius = Math.min(toItem.width / 2, toItem.height / 2); // simplistic radius
+        const endPoint = {
+          x: p2.x - toItemRadius * Math.cos(angle) * 0.8, // Adjust multiplier for appearance
+          y: p2.y - toItemRadius * Math.sin(angle) * 0.8
+        };
+        
         return (
           <line
             key={arrow.id}
             x1={p1.x}
             y1={p1.y}
-            x2={p2.x}
-            y2={p2.y}
+            x2={endPoint.x}
+            y2={endPoint.y}
             stroke="hsl(var(--primary))"
             strokeWidth="2"
             markerEnd="url(#arrowhead)"

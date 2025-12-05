@@ -12,12 +12,14 @@ export interface CanvasItemData {
   width: number;
   height: number;
   content: string; // For text content, image src, or board title
+  parentId: string | null; // null for root board
 }
 
 export interface ArrowData {
   id:string;
   from: string; // CanvasItemData id
   to: string; // CanvasItemData id
+  parentId: string | null; // null for root board
 }
 
 export interface ViewState {
@@ -27,4 +29,9 @@ export interface ViewState {
 
 export interface ConnectionState {
   from?: string; // Starting item id for connection
+}
+
+export interface Board {
+    id: string;
+    name: string;
 }

@@ -13,16 +13,17 @@ interface CanvasItemProps {
   onDrag: (id: string, newPosition: Point) => void;
   onContentChange: (id: string, newContent: string) => void;
   onClick: () => void;
+  onDoubleClick: () => void;
   isSelected: boolean;
 }
 
-const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onContentChange, onClick, isSelected }) => {
+const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onContentChange, onClick, onDoubleClick, isSelected }) => {
   const dragStartPos = useRef<Point>({ x: 0, y: 0 });
   const itemStartPos = useRef<Point>({ x: 0, y: 0 });
 
   const handleMouseDown = (e: MouseEvent) => {
     // Prevent initiating drag from form elements
-    if ((e.target as HTMLElement).tagName.toLowerCase() === 'textarea') {
+    if ((e.target as HTMLElement).tagName.toLowerCase() === 'textarea' || (e.target as HTMLElement).closest('.no-drag')) {
       return;
     }
     e.stopPropagation();
@@ -75,7 +76,16 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onContentChange, 
       case 'board':
         return (
           <CardHeader>
-            <CardTitle>{item.content}</CardTitle>
+            <CardTitle 
+              contentEditable
+              suppressContentEditableWarning
+              className="outline-none focus:ring-2 focus:ring-primary rounded-sm px-1 no-drag"
+              onBlur={(e) => onContentChange(item.id, e.currentTarget.textContent || '')}
+              onClick={(e) => e.stopPropagation()} // Prevent click from bubbling to parent
+              onMouseDown={(e) => e.stopPropagation()} // Prevent drag
+            >
+              {item.content}
+            </CardTitle>
           </CardHeader>
         );
       default:
@@ -100,11 +110,13 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onContentChange, 
       )}
       onMouseDown={handleMouseDown}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick(); }}
     >
       <Card
         className={cn(
           "w-full h-full overflow-hidden transition-colors duration-200",
           item.type === 'text' && 'p-2',
+          item.type === 'board' && 'flex items-center justify-center',
         )}
       >
         {renderContent()}
