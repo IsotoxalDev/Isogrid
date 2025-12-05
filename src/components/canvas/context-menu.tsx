@@ -41,19 +41,19 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu }) => {
             {item.label}
           </Button>
         ))}
-        {!isItemMenu && <Separator className="my-1" />}
-        
-        <Button
-          variant="ghost"
-          className="w-full justify-start"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAction(connectionItem.action);
-          }}
-        >
-          <connectionItem.icon className="w-4 h-4 mr-2" />
-          {connectionItem.label}
-        </Button>
+        {isItemMenu && (
+          <Button
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAction(connectionItem.action);
+            }}
+          >
+            <connectionItem.icon className="w-4 h-4 mr-2" />
+            {connectionItem.label}
+          </Button>
+        )}
         
         {isItemMenu && (
             <>

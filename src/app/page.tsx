@@ -169,7 +169,9 @@ export default function CanvasCraftPage() {
 
     const canvasPos = screenToCanvas({ x: contextMenu.x, y: contextMenu.y });
     if (action === 'connect') {
-        setConnectionState({ from: undefined });
+        if (contextMenu.itemId) {
+            setConnectionState({ from: contextMenu.itemId });
+        }
         setContextMenu({ ...contextMenu, show: false });
     } else if (action !== 'delete') {
         addItem(action, canvasPos);
@@ -228,19 +230,28 @@ export default function CanvasCraftPage() {
                 const src = e.target?.result as string;
                 if (!src) return;
                 
-                // For simplicity, pasting at the center of the current view
-                const canvasCenter = screenToCanvas({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-                const newItem: CanvasItemData = {
-                    id: `item-${Date.now()}`,
-                    type: 'image',
-                    position: canvasCenter,
-                    width: 300,
-                    height: 200,
-                    content: src,
-                    parentId: currentBoardId,
+                const img = new Image();
+                img.onload = () => {
+                    const MAX_WIDTH = 400;
+                    const aspectRatio = img.naturalWidth / img.naturalHeight;
+                    const width = Math.min(img.naturalWidth, MAX_WIDTH);
+                    const height = width / aspectRatio;
+
+                    const canvasCenter = screenToCanvas({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+                    
+                    const newItem: CanvasItemData = {
+                        id: `item-${Date.now()}`,
+                        type: 'image',
+                        position: {x: canvasCenter.x - width/2, y: canvasCenter.y - height/2},
+                        width: width,
+                        height: height,
+                        content: src,
+                        parentId: currentBoardId,
+                    };
+                    setItems(prev => [...prev, newItem]);
+                    toast({ title: "Image pasted successfully!" });
                 };
-                setItems(prev => [...prev, newItem]);
-                toast({ title: "Image pasted successfully!" });
+                img.src = src;
             };
             reader.readAsDataURL(blob);
             return; // Handle one image at a time
