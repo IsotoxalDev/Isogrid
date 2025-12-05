@@ -66,8 +66,18 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onDrag, onResize, onConte
             const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
             const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
             
-            const newWidth = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
-            const newHeight = Math.max(MIN_SIZE, resizeStartSize.current.height + dy);
+            let newWidth = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
+            let newHeight = Math.max(MIN_SIZE, resizeStartSize.current.height + dy);
+
+            if (moveEvent.shiftKey) {
+              const aspectRatio = resizeStartSize.current.width / resizeStartSize.current.height;
+              // Determine dominant axis of mouse movement
+              if (Math.abs(dx) > Math.abs(dy)) {
+                  newHeight = newWidth / aspectRatio;
+              } else {
+                  newWidth = newHeight * aspectRatio;
+              }
+            }
 
             onResize(item.id, newWidth, newHeight);
         };
