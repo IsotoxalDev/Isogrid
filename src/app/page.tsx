@@ -473,7 +473,7 @@ export default function CanvasCraftPage() {
               </PopoverContent>
           </Popover>
       </div>
-      {contextMenu.show && <ContextMenu x={contextMenu.x} y={context.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} accentColor={accentColor} />}
+      {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} accentColor={accentColor} />}
       
       <Toolbar settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
     </main>
