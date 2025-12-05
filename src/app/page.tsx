@@ -57,7 +57,7 @@ const INITIAL_ARROWS: ArrowData[] = [
   { id: 'arrow-1', from: 'item-1', to: 'item-2', parentId: null },
 ];
 
-const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '73 56% 60%', showGrid: true } };
+const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '73 56% 60%', showGrid: true, vignetteStrength: 0 } };
 
 const GRID_SIZE = 40;
 
@@ -89,7 +89,7 @@ export default function CanvasCraftPage() {
   
   // Combine settings from board stack
   const combinedSettings = boardStack.reduce((acc, board) => ({ ...acc, ...board.settings }), {} as BoardSettings);
-  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteStrength = 25 } = combinedSettings;
+  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteStrength = 0 } = combinedSettings;
 
 
   const updateState = (newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]), newArrows: ArrowData[] | ((prev: ArrowData[]) => ArrowData[])) => {
@@ -268,7 +268,7 @@ export default function CanvasCraftPage() {
   
   const handleItemDoubleClick = (item: CanvasItemData) => {
       if (item.type === 'board') {
-          const newBoard: Board = {id: item.id, name: item.content, settings: { showGrid: true }};
+          const newBoard: Board = {id: item.id, name: item.content, settings: { showGrid: true, vignetteStrength: 0 }};
           setBoardStack(stack => [...stack, newBoard]);
           setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
           setHistory([{ items, arrows }]);
@@ -383,7 +383,17 @@ export default function CanvasCraftPage() {
     ? `radial-gradient(hsl(var(--muted-foreground) / ${gridOpacity}) 1px, transparent 0)`
     : `linear-gradient(hsl(var(--muted-foreground) / ${gridOpacity}) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--muted-foreground) / ${gridOpacity}) 1px, transparent 1px)`;
   
-  const invertedVignette = 100 - vignetteStrength;
+  const gridStyleProps: React.CSSProperties = {
+    backgroundImage: gridBackgroundImage,
+    backgroundSize: `${scaledGridSize}px ${scaledGridSize}px`,
+    backgroundPosition: `${viewState.pan.x % scaledGridSize}px ${viewState.pan.y % scaledGridSize}px`,
+  };
+
+  if (vignetteStrength > 0) {
+    const invertedVignette = 100 - vignetteStrength;
+    gridStyleProps.maskImage = `radial-gradient(circle, white ${invertedVignette}%, transparent 100%)`;
+    gridStyleProps.WebkitMaskImage = `radial-gradient(circle, white ${invertedVignette}%, transparent 100%)`;
+  }
 
   return (
     <main
@@ -402,13 +412,7 @@ export default function CanvasCraftPage() {
         {showGrid && (
             <div
                 className="absolute inset-0 w-full h-full"
-                style={{
-                    backgroundImage: gridBackgroundImage,
-                    backgroundSize: `${scaledGridSize}px ${scaledGridSize}px`,
-                    backgroundPosition: `${viewState.pan.x % scaledGridSize}px ${viewState.pan.y % scaledGridSize}px`,
-                    maskImage: `radial-gradient(circle, white, transparent ${invertedVignette}%)`,
-                    WebkitMaskImage: `radial-gradient(circle, white, transparent ${invertedVignette}%)`,
-                }}
+                style={gridStyleProps}
             />
         )}
         <div className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-background/80 backdrop-blur-sm flex items-center space-x-2">
