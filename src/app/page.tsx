@@ -148,8 +148,8 @@ export default function CanvasCraftPage() {
     if (!canvasRef.current) return screenPoint;
     const rect = canvasRef.current.getBoundingClientRect();
     return {
-      x: (screenPoint.x - viewState.pan.x - rect.left) / viewState.zoom,
-      y: (screenPoint.y - viewState.pan.y - rect.top) / viewState.zoom,
+      x: (screenPoint.x - rect.left - viewState.pan.x) / viewState.zoom,
+      y: (screenPoint.y - rect.top - viewState.pan.y) / viewState.zoom,
     };
   }, [viewState]);
 
@@ -162,14 +162,17 @@ export default function CanvasCraftPage() {
     const clampedZoom = Math.max(0.1, Math.min(5, newZoom));
 
     const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    const mouseOnCanvasBeforeZoom = screenToCanvas({x: e.clientX, y: e.clientY});
+    const mouseOnCanvasBeforeZoom = {
+        x: (mousePos.x - viewState.pan.x) / viewState.zoom,
+        y: (mousePos.y - viewState.pan.y) / viewState.zoom
+    };
     
     const newPan = {
       x: mousePos.x - mouseOnCanvasBeforeZoom.x * clampedZoom,
       y: mousePos.y - mouseOnCanvasBeforeZoom.y * clampedZoom
     };
 
-    setViewState({ zoom: clampedZoom, pan: {x: newPan.x + rect.left, y: newPan.y + rect.top } });
+    setViewState({ zoom: clampedZoom, pan: newPan });
   };
   
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
@@ -200,7 +203,6 @@ export default function CanvasCraftPage() {
         const isCanvasClick = target === canvasRef.current || target.dataset.isCanvasBackdrop;
 
         if (isCanvasClick) {
-            setSelectedItemIds([]);
             const startPoint = { x: e.clientX, y: e.clientY };
             setSelectionBox({ start: startPoint, end: startPoint, visible: true });
             e.stopPropagation();
@@ -259,10 +261,10 @@ export default function CanvasCraftPage() {
         const selected = filteredItems.filter(item => {
             const itemRect = { x: item.position.x, y: item.position.y, width: item.width, height: item.height };
             return (
-                itemRect.x > selectionRect.x &&
-                itemRect.y > selectionRect.y &&
-                itemRect.x + itemRect.width < selectionRect.x + selectionRect.width &&
-                itemRect.y + itemRect.height < selectionRect.y + selectionRect.height
+                itemRect.x + itemRect.width > selectionRect.x &&
+                itemRect.x < selectionRect.x + selectionRect.width &&
+                itemRect.y + itemRect.height > selectionRect.y &&
+                itemRect.y < selectionRect.y + selectionRect.height
             );
         }).map(item => item.id);
         
@@ -341,12 +343,15 @@ export default function CanvasCraftPage() {
   };
   
   const handleItemClick = (id: string, e: MouseEvent) => {
+    e.stopPropagation();
     if (e.ctrlKey || e.metaKey) {
         setSelectedItemIds(ids => 
             ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
         );
     } else {
-        setSelectedItemIds([id]);
+        if (!selectedItemIds.includes(id)) {
+            setSelectedItemIds([id]);
+        }
     }
   };
   
@@ -478,8 +483,19 @@ export default function CanvasCraftPage() {
 
   const getCursor = () => {
     if (arrowDrawingState.isDrawing) return 'crosshair';
-    if(selectionBox) return 'crosshair';
+    if(selectionBox?.visible) return 'crosshair';
     return 'grab';
+  }
+
+  const handleCanvasClick = (e: MouseEvent<HTMLDivElement>) => {
+      if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
+      
+      const target = e.target as HTMLElement;
+      const isCanvasClick = target === canvasRef.current || target.dataset.isCanvasBackdrop;
+
+      if(isCanvasClick && !selectionBox) {
+          setSelectedItemIds([]);
+      }
   }
 
   return (
@@ -497,10 +513,7 @@ export default function CanvasCraftPage() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onContextMenu={handleContextMenu}
-        onClick={() => {
-            if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
-            setSelectedItemIds([]);
-        }}
+        onClick={handleCanvasClick}
       >
           <div data-is-canvas-backdrop="true" className="absolute inset-0 w-full h-full" />
           {showGrid && (
@@ -572,3 +585,5 @@ export default function CanvasCraftPage() {
     </main>
   );
 }
+
+    

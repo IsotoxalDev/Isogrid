@@ -16,7 +16,7 @@ const SelectionBox: FC<SelectionBoxProps> = ({ start, end }) => {
     width: Math.abs(start.x - end.x),
     height: Math.abs(start.y - end.y),
     border: '1px solid hsl(var(--primary))',
-    backgroundColor: 'hsl(var(--primary) / 0.1)',
+    backgroundColor: 'hsl(var(--primary) / 0.2)',
     pointerEvents: 'none',
     zIndex: 100,
   };
@@ -25,3 +25,5 @@ const SelectionBox: FC<SelectionBoxProps> = ({ start, end }) => {
 };
 
 export default SelectionBox;
+
+    

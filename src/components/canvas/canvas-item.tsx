@@ -135,7 +135,6 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
             onChange={(e) => onUpdate({ id: item.id, content: e.target.value })}
             onBlur={handleTextBlur}
             className="w-full h-full bg-transparent border-0 resize-none focus:ring-0 focus-visible:ring-offset-0 focus-visible:ring-0"
-            onClick={(e) => e.stopPropagation()} // Prevent click from bubbling to parent
           />
         ) : (
           <div className="w-full h-full p-4 whitespace-pre-wrap">{item.content}</div>
@@ -197,7 +196,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
         !isSelected && 'hover:shadow-xl'
       )}
       onMouseDown={handleMouseDown}
-      onClick={(e) => { e.stopPropagation(); onClick(e); }}
+      onClick={onClick}
       onDoubleClick={(e) => { e.stopPropagation(); if(item.type !== 'board') { handleItemDoubleClick() } else { onDoubleClick() } }}
       onContextMenu={onContextMenu}
     >
@@ -220,3 +219,5 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
 };
 
 export default CanvasItem;
+
+    
