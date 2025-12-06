@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ChevronRight, Home, Cog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import SelectionBox from '@/components/canvas/selection-box';
 
 const INITIAL_ITEMS: CanvasItemData[] = [
   {
@@ -83,6 +84,9 @@ export default function CanvasCraftPage() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean; itemId?: string }>({ x: 0, y: 0, show: false });
   const [arrowDrawingState, setArrowDrawingState] = useState<ArrowDrawingState>({ isDrawing: false, startPoint: null });
   const [previewArrow, setPreviewArrow] = useState<ArrowData | null>(null);
+  
+  const [selectionBox, setSelectionBox] = useState<{ start: Point; end: Point; visible: boolean } | null>(null);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   
   const canvasRef = useRef<HTMLDivElement>(null);
   const isPanning = useRef(false);
@@ -191,6 +195,19 @@ export default function CanvasCraftPage() {
         return;
     }
 
+    if (e.button === 0 && !e.metaKey && !e.ctrlKey) {
+        const target = e.target as HTMLElement;
+        const isCanvasClick = target === canvasRef.current || target.dataset.isCanvasBackdrop;
+
+        if (isCanvasClick) {
+            setSelectedItemIds([]);
+            const startPoint = { x: e.clientX, y: e.clientY };
+            setSelectionBox({ start: startPoint, end: startPoint, visible: true });
+            e.stopPropagation();
+            return;
+        }
+    }
+
     if (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey))) {
       isPanning.current = true;
       lastPanPoint.current = { x: e.clientX, y: e.clientY };
@@ -208,6 +225,10 @@ export default function CanvasCraftPage() {
   };
   
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+    if (selectionBox && selectionBox.visible) {
+        setSelectionBox(sb => sb ? { ...sb, end: { x: e.clientX, y: e.clientY } } : null);
+        return;
+    }
     if (isPanning.current) {
       const dx = e.clientX - lastPanPoint.current.x;
       const dy = e.clientY - lastPanPoint.current.y;
@@ -224,6 +245,30 @@ export default function CanvasCraftPage() {
   };
   
   const handleMouseUp = (e: MouseEvent<HTMLDivElement>) => {
+    if (selectionBox && selectionBox.visible) {
+        const startCanvas = screenToCanvas(selectionBox.start);
+        const endCanvas = screenToCanvas(selectionBox.end);
+
+        const selectionRect = {
+            x: Math.min(startCanvas.x, endCanvas.x),
+            y: Math.min(startCanvas.y, endCanvas.y),
+            width: Math.abs(startCanvas.x - endCanvas.x),
+            height: Math.abs(startCanvas.y - endCanvas.y),
+        };
+
+        const selected = filteredItems.filter(item => {
+            const itemRect = { x: item.position.x, y: item.position.y, width: item.width, height: item.height };
+            return (
+                itemRect.x > selectionRect.x &&
+                itemRect.y > selectionRect.y &&
+                itemRect.x + itemRect.width < selectionRect.x + selectionRect.width &&
+                itemRect.y + itemRect.height < selectionRect.y + selectionRect.height
+            );
+        }).map(item => item.id);
+        
+        setSelectedItemIds(selected);
+        setSelectionBox(null);
+    }
     isPanning.current = false;
     e.currentTarget.style.cursor = 'grab';
     
@@ -295,8 +340,14 @@ export default function CanvasCraftPage() {
     );
   };
   
-  const handleItemClick = (id: string) => {
-    // This function can be used for item selection in the future
+  const handleItemClick = (id: string, e: MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+        setSelectedItemIds(ids => 
+            ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
+        );
+    } else {
+        setSelectedItemIds([id]);
+    }
   };
   
   const handleItemDoubleClick = (item: CanvasItemData) => {
@@ -427,6 +478,7 @@ export default function CanvasCraftPage() {
 
   const getCursor = () => {
     if (arrowDrawingState.isDrawing) return 'crosshair';
+    if(selectionBox) return 'crosshair';
     return 'grab';
   }
 
@@ -445,10 +497,15 @@ export default function CanvasCraftPage() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onContextMenu={handleContextMenu}
-        onClick={() => contextMenu.show && setContextMenu({ ...contextMenu, show: false })}
+        onClick={() => {
+            if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
+            setSelectedItemIds([]);
+        }}
       >
+          <div data-is-canvas-backdrop="true" className="absolute inset-0 w-full h-full" />
           {showGrid && (
               <div
+                  data-is-canvas-backdrop="true"
                   className="absolute inset-0 w-full h-full"
                   style={gridStyleProps}
               />
@@ -456,6 +513,7 @@ export default function CanvasCraftPage() {
 
           {vignetteStrength > 0 && (
             <div
+              data-is-canvas-backdrop="true"
               className="absolute inset-0 w-full h-full pointer-events-none"
               style={{
                 background: `radial-gradient(circle, transparent 40%, hsl(var(--background) / ${vignetteStrength/100}) 100%)`,
@@ -475,15 +533,16 @@ export default function CanvasCraftPage() {
                       item={item}
                       zoom={viewState.zoom}
                       onUpdate={handleItemUpdate}
-                      onClick={() => handleItemClick(item.id)}
+                      onClick={(e) => handleItemClick(item.id, e)}
                       onDoubleClick={() => handleItemDoubleClick(item)}
                       onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({x: e.clientX, y: e.clientY, show: true, itemId: item.id})}}
-                      isSelected={false}
+                      isSelected={selectedItemIds.includes(item.id)}
                   />
               ))}
           </div>
 
       </div>
+      {selectionBox && selectionBox.visible && <SelectionBox start={selectionBox.start} end={selectionBox.end} />}
       <div className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-background/80 backdrop-blur-sm flex items-center space-x-2">
           <div className="flex items-center space-x-2 text-sm text-foreground">
               {boardStack.map((board, index) => (

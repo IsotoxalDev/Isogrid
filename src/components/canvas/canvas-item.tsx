@@ -11,7 +11,7 @@ interface CanvasItemProps {
   item: CanvasItemData;
   zoom: number;
   onUpdate: (item: Partial<CanvasItemData> & { id: string }) => void;
-  onClick: () => void;
+  onClick: (event: MouseEvent) => void;
   onDoubleClick: () => void;
   onContextMenu: (event: MouseEvent) => void;
   isSelected: boolean;
@@ -38,7 +38,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
 
     const isLeftClick = e.button === 0;
     
-    if (isLeftClick) { // Left click for dragging
+    if (isLeftClick && !(e.ctrlKey || e.metaKey)) { // Left click for dragging
         e.preventDefault();
         itemStartPos.current = item.position;
 
@@ -75,7 +75,13 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
         textareaRef.current.select();
       } else if (item.type === 'board' && cardTitleRef.current) {
         cardTitleRef.current.focus();
-        document.execCommand('selectAll', false, undefined);
+        const range = document.createRange();
+        const sel = window.getSelection();
+        if (sel) {
+          range.selectNodeContents(cardTitleRef.current);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
       }
     }
   }, [isEditing, item.type]);
@@ -141,7 +147,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
             alt="User uploaded content"
             width={item.width}
             height={item.height}
-            className="object-cover w-full h-full rounded-md"
+            className="object-cover w-full h-full rounded-lg"
             unoptimized // for blob urls
             data-ai-hint="abstract art"
           />
@@ -191,7 +197,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
         !isSelected && 'hover:shadow-xl'
       )}
       onMouseDown={handleMouseDown}
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onClick={(e) => { e.stopPropagation(); onClick(e); }}
       onDoubleClick={(e) => { e.stopPropagation(); if(item.type !== 'board') { handleItemDoubleClick() } else { onDoubleClick() } }}
       onContextMenu={onContextMenu}
     >
@@ -199,8 +205,8 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
         className={cn(
           "w-full h-full overflow-hidden transition-colors duration-200 rounded-lg shadow-md",
           item.type === 'image' && 'p-0 border-0',
-          item.type === 'text' && 'bg-card/80 backdrop-blur-sm',
-          item.type === 'board' && 'flex items-center justify-center bg-card/80 backdrop-blur-sm',
+          item.type === 'text' && 'bg-card/90 backdrop-blur-sm',
+          item.type === 'board' && 'flex items-center justify-center bg-card/90 backdrop-blur-sm',
         )}
       >
         {renderContent()}
