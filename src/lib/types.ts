@@ -3,11 +3,11 @@ export type Point = {
   y: number;
 };
 
-export type CanvasItemType = 'text' | 'image' | 'board';
+export type CanvasItemType = 'text' | 'image' | 'board' | 'arrow';
 
 export interface CanvasItemData {
   id: string;
-  type: CanvasItemType;
+  type: Extract<CanvasItemType, 'text' | 'image' | 'board'>;
   position: Point;
   width: number;
   height: number;
@@ -17,18 +17,17 @@ export interface CanvasItemData {
 
 export interface ArrowData {
   id:string;
-  from: string; // CanvasItemData id
-  to: string; // CanvasItemData id
+  type: 'arrow';
+  start: Point;
+  end: Point;
   parentId: string | null; // null for root board
 }
+
+export type AnyCanvasItem = CanvasItemData | ArrowData;
 
 export interface ViewState {
   zoom: number;
   pan: Point;
-}
-
-export interface ConnectionState {
-  from?: string; // Starting item id for connection
 }
 
 export type GridStyle = 'dots' | 'lines';

@@ -1,31 +1,31 @@
 "use client";
 
 import type { FC } from 'react';
-import { Type, Image, Square, ArrowRight, Trash2, LogIn } from 'lucide-react';
+import { Type, Image, Square, ArrowRight, Trash2, LogIn, MousePointer2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { CanvasItemType } from '@/lib/types';
+import { CanvasItemType, AnyCanvasItem } from '@/lib/types';
 
 interface ContextMenuProps {
   x: number;
   y: number;
-  onAction: (action: CanvasItemType | 'connect' | 'delete' | 'enter') => void;
+  onAction: (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow'> | 'delete' | 'enter') => void;
   isItemMenu: boolean;
-  itemType?: CanvasItemType;
+  itemType?: AnyCanvasItem['type'];
   accentColor?: string;
 }
 
 const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemType, accentColor }) => {
   const menuItems = [
-    { label: 'Add Text', icon: Type, action: 'text' as CanvasItemType },
-    { label: 'Add Image', icon: Image, action: 'image' as CanvasItemType },
-    { label: 'Add Board', icon: Square, action: 'board' as CanvasItemType },
+    { label: 'Add Text', icon: Type, action: 'text' as const },
+    { label: 'Add Image', icon: Image, action: 'image' as const },
+    { label: 'Add Board', icon: Square, action: 'board' as const },
+    { label: 'Add Arrow', icon: ArrowRight, action: 'arrow' as const },
   ];
   
-  const connectionItem = { label: 'Connect', icon: ArrowRight, action: 'connect' };
-  const deleteItem = { label: 'Delete', icon: Trash2, action: 'delete' };
-  const enterBoardItem = { label: 'Enter Board', icon: LogIn, action: 'enter' };
+  const deleteItem = { label: 'Delete', icon: Trash2, action: 'delete' as const };
+  const enterBoardItem = { label: 'Enter Board', icon: LogIn, action: 'enter' as const };
 
   const getDeleteColor = () => {
     if (!accentColor) return 'hsl(var(--destructive))';
@@ -66,19 +66,6 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
             </Button>
         )}
 
-        {isItemMenu && (
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAction(connectionItem.action);
-            }}
-          >
-            <connectionItem.icon className="w-4 h-4 mr-2" />
-            {connectionItem.label}
-          </Button>
-        )}
         
         {isItemMenu && (
             <>

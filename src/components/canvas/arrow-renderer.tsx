@@ -1,61 +1,13 @@
 "use client";
 
 import type { FC } from 'react';
-import { ArrowData, CanvasItemData, Point } from '@/lib/types';
+import { ArrowData } from '@/lib/types';
 
 interface ArrowRendererProps {
   arrows: ArrowData[];
-  items: CanvasItemData[];
 }
 
-const ArrowRenderer: FC<ArrowRendererProps> = ({ arrows, items }) => {
-  const itemsById = new Map(items.map(item => [item.id, item]));
-
-  const getIntersectionPoint = (fromItem: CanvasItemData, toItem: CanvasItemData): { start: Point, end: Point } => {
-    const from = {
-        x: fromItem.position.x + fromItem.width / 2,
-        y: fromItem.position.y + fromItem.height / 2,
-        width: fromItem.width,
-        height: fromItem.height,
-    };
-    const to = {
-        x: toItem.position.x + toItem.width / 2,
-        y: toItem.position.y + toItem.height / 2,
-        width: toItem.width,
-        height: toItem.height,
-    };
-
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    const angle = Math.atan2(dy, dx);
-
-    const calcIntersection = (item: {width: number, height: number}, angle: number): Point => {
-        const w = item.width / 2;
-        const h = item.height / 2;
-        const tan = Math.tan(angle);
-        const region = Math.abs(angle) > Math.PI / 4 && Math.abs(angle) < 3 * Math.PI / 4;
-
-        let x, y;
-        if (region) { // Top or bottom
-            y = Math.sign(dy) * h;
-            x = y / tan;
-        } else { // Left or right
-            x = Math.sign(dx) * w;
-            y = x * tan;
-        }
-        return { x, y };
-    }
-
-    const startOffset = calcIntersection(fromItem, angle);
-    const endOffset = calcIntersection(toItem, angle - Math.PI);
-
-    return {
-        start: { x: from.x + startOffset.x, y: from.y + startOffset.y },
-        end: { x: to.x + endOffset.x, y: to.y + endOffset.y },
-    };
-  };
-
-
+const ArrowRenderer: FC<ArrowRendererProps> = ({ arrows }) => {
   return (
     <svg
       style={{
@@ -81,20 +33,25 @@ const ArrowRenderer: FC<ArrowRendererProps> = ({ arrows, items }) => {
         </marker>
       </defs>
       {arrows.map(arrow => {
-        const fromItem = itemsById.get(arrow.from);
-        const toItem = itemsById.get(arrow.to);
-
-        if (!fromItem || !toItem) return null;
-
-        const { start, end } = getIntersectionPoint(fromItem, toItem);
+        if (!arrow.start || !arrow.end) return null;
         
+        const dx = arrow.end.x - arrow.start.x;
+        const dy = arrow.end.y - arrow.start.y;
+        const length = Math.sqrt(dx*dx + dy*dy);
+        const unitDx = dx / length;
+        const unitDy = dy / length;
+
+        // Subtract arrowhead length from the end point
+        const endX = arrow.end.x - unitDx * 10;
+        const endY = arrow.end.y - unitDy * 10;
+
         return (
           <line
             key={arrow.id}
-            x1={start.x}
-            y1={start.y}
-            x2={end.x}
-            y2={end.y}
+            x1={arrow.start.x}
+            y1={arrow.start.y}
+            x2={endX}
+            y2={endY}
             stroke="hsl(var(--primary))"
             strokeWidth="2"
             markerEnd="url(#arrowhead)"

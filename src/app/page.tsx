@@ -6,10 +6,10 @@ import {
   Point,
   ViewState,
   ArrowData,
-  ConnectionState,
   CanvasItemType,
   Board,
   BoardSettings,
+  AnyCanvasItem,
 } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -54,7 +54,7 @@ const INITIAL_ITEMS: CanvasItemData[] = [
 ];
 
 const INITIAL_ARROWS: ArrowData[] = [
-  { id: 'arrow-1', from: 'item-1', to: 'item-2', parentId: null },
+  { id: 'arrow-1', type: 'arrow', start: { x: 360, y: 210 }, end: {x: 490, y: 200}, parentId: null },
 ];
 
 const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '73 56% 60%', showGrid: true, gridStyle: 'dots', gridOpacity: 0.5, vignetteStrength: 100 } };
@@ -66,6 +66,11 @@ type HistoryState = {
   arrows: ArrowData[];
 };
 
+type ArrowDrawingState = {
+    isDrawing: boolean;
+    startPoint: Point | null;
+}
+
 export default function CanvasCraftPage() {
   const [items, setItems] = useState<CanvasItemData[]>(INITIAL_ITEMS);
   const [arrows, setArrows] = useState<ArrowData[]>(INITIAL_ARROWS);
@@ -76,7 +81,8 @@ export default function CanvasCraftPage() {
 
   const [viewState, setViewState] = useState<ViewState>({ zoom: 1, pan: { x: 0, y: 0 } });
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean; itemId?: string }>({ x: 0, y: 0, show: false });
-  const [connectionState, setConnectionState] = useState<ConnectionState>({});
+  const [arrowDrawingState, setArrowDrawingState] = useState<ArrowDrawingState>({ isDrawing: false, startPoint: null });
+  const [previewArrow, setPreviewArrow] = useState<ArrowData | null>(null);
   
   const canvasRef = useRef<HTMLDivElement>(null);
   const isPanning = useRef(false);
@@ -87,10 +93,8 @@ export default function CanvasCraftPage() {
   const currentBoard = boardStack[boardStack.length - 1];
   const currentBoardId = currentBoard.id === 'root' ? null : currentBoard.id;
   
-  // Combine settings from board stack
   const combinedSettings = boardStack.reduce((acc, board) => ({ ...acc, ...board.settings }), {} as BoardSettings);
   const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteStrength = 100 } = combinedSettings;
-
 
   const updateState = (newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]), newArrows: ArrowData[] | ((prev: ArrowData[]) => ArrowData[])) => {
     const updatedItems = typeof newItems === 'function' ? newItems(items) : newItems;
@@ -127,7 +131,6 @@ export default function CanvasCraftPage() {
   };
 
   useEffect(() => {
-    // Initialize history
     setHistory([{ items, arrows }]);
     setHistoryIndex(0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -135,6 +138,7 @@ export default function CanvasCraftPage() {
 
   const filteredItems = items.filter(item => item.parentId === currentBoardId);
   const filteredArrows = arrows.filter(arrow => arrow.parentId === currentBoardId);
+  const allCanvasItems: AnyCanvasItem[] = [...filteredItems, ...filteredArrows];
 
   const screenToCanvas = useCallback((screenPoint: Point): Point => {
     if (!canvasRef.current) return screenPoint;
@@ -166,12 +170,39 @@ export default function CanvasCraftPage() {
   
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
+
+    if (arrowDrawingState.isDrawing) {
+        const canvasPos = screenToCanvas({ x: e.clientX, y: e.clientY });
+        if (!arrowDrawingState.startPoint) {
+            setArrowDrawingState(s => ({ ...s, startPoint: canvasPos }));
+            setPreviewArrow({ id: 'preview-arrow', type: 'arrow', start: canvasPos, end: canvasPos, parentId: currentBoardId });
+        } else {
+            const newArrow: ArrowData = {
+                id: `arrow-${Date.now()}`,
+                type: 'arrow',
+                start: arrowDrawingState.startPoint,
+                end: canvasPos,
+                parentId: currentBoardId
+            };
+            updateState(items, prevArrows => [...prevArrows, newArrow]);
+            setArrowDrawingState({ isDrawing: false, startPoint: null });
+            setPreviewArrow(null);
+        }
+        return;
+    }
+
     if (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey))) {
       isPanning.current = true;
       lastPanPoint.current = { x: e.clientX, y: e.clientY };
       e.currentTarget.style.cursor = 'grabbing';
     }
     if (e.button === 2) {
+        if (arrowDrawingState.isDrawing) {
+            setArrowDrawingState({ isDrawing: false, startPoint: null });
+            setPreviewArrow(null);
+            e.preventDefault();
+            return;
+        }
         rightClickDragInfo.current = { isDragging: false };
     }
   };
@@ -186,6 +217,10 @@ export default function CanvasCraftPage() {
     if(e.buttons === 2 && !rightClickDragInfo.current.isDragging) {
         rightClickDragInfo.current.isDragging = true;
     }
+    if (arrowDrawingState.isDrawing && arrowDrawingState.startPoint && previewArrow) {
+        const canvasPos = screenToCanvas({ x: e.clientX, y: e.clientY });
+        setPreviewArrow({ ...previewArrow, end: canvasPos });
+    }
   };
   
   const handleMouseUp = (e: MouseEvent<HTMLDivElement>) => {
@@ -193,12 +228,12 @@ export default function CanvasCraftPage() {
     e.currentTarget.style.cursor = 'grab';
     
     if (e.button === 2 && !rightClickDragInfo.current.isDragging) {
-        const clickedItem = (e.target as HTMLElement).closest('[data-item-id]');
-        const itemId = clickedItem ? clickedItem.getAttribute('data-item-id') : undefined;
-
-        if (connectionState.from) {
-            setConnectionState({});
+        if (arrowDrawingState.isDrawing) {
+            setArrowDrawingState({ isDrawing: false, startPoint: null });
+            setPreviewArrow(null);
         } else {
+            const clickedItem = (e.target as HTMLElement).closest('[data-item-id]');
+            const itemId = clickedItem ? clickedItem.getAttribute('data-item-id') : undefined;
             setContextMenu({ x: e.clientX, y: e.clientY, show: true, itemId: itemId || undefined });
         }
     }
@@ -209,7 +244,7 @@ export default function CanvasCraftPage() {
     e.preventDefault();
   };
 
-  const addItem = (type: CanvasItemType, position: Point) => {
+  const addItem = (type: Extract<CanvasItemType, 'text' | 'image' | 'board'>, position: Point) => {
     const newItem: CanvasItemData = {
       id: `item-${Date.now()}`,
       type,
@@ -226,12 +261,14 @@ export default function CanvasCraftPage() {
   const deleteItem = (itemId: string) => {
     updateState(
         items.filter(item => item.id !== itemId),
-        arrows.filter(arrow => arrow.from !== itemId && arrow.to !== itemId)
+        arrows.filter(arrow => arrow.id !== itemId)
     );
     setContextMenu({ ...contextMenu, show: false });
   }
 
-  const handleContextMenuAction = (action: CanvasItemType | 'connect' | 'delete' | 'enter') => {
+  const handleContextMenuAction = (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow'> | 'delete' | 'enter') => {
+    const canvasPos = screenToCanvas({ x: contextMenu.x, y: contextMenu.y });
+
     if (action === 'delete' && contextMenu.itemId) {
       deleteItem(contextMenu.itemId);
       return;
@@ -242,12 +279,10 @@ export default function CanvasCraftPage() {
         return;
     }
 
-    const canvasPos = screenToCanvas({ x: contextMenu.x, y: contextMenu.y });
-    if (action === 'connect') {
-        if (contextMenu.itemId) {
-            setConnectionState({ from: contextMenu.itemId });
-        }
-        setContextMenu({ ...contextMenu, show: false });
+    setContextMenu({ ...contextMenu, show: false });
+    
+    if (action === 'arrow') {
+        setArrowDrawingState({ isDrawing: true, startPoint: null });
     } else if (action !== 'delete' && action !== 'enter') {
         addItem(action, canvasPos);
     }
@@ -261,21 +296,7 @@ export default function CanvasCraftPage() {
   };
   
   const handleItemClick = (id: string) => {
-    if (connectionState.from === undefined) return;
-
-    if (!connectionState.from) {
-        setConnectionState({ from: id });
-    } else {
-        if (connectionState.from === id) return;
-        const newArrow: ArrowData = {
-            id: `arrow-${Date.now()}`,
-            from: connectionState.from,
-            to: id,
-            parentId: currentBoardId
-        };
-        updateState(items, prevArrows => [...prevArrows, newArrow]);
-        setConnectionState({});
-    }
+    // This function can be used for item selection in the future
   };
   
   const handleItemDoubleClick = (item: CanvasItemData) => {
@@ -357,7 +378,10 @@ export default function CanvasCraftPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setConnectionState({});
+        if (arrowDrawingState.isDrawing) {
+            setArrowDrawingState({ isDrawing: false, startPoint: null });
+            setPreviewArrow(null);
+        }
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
@@ -371,7 +395,7 @@ export default function CanvasCraftPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyIndex, history.length]);
+  }, [historyIndex, history.length, arrowDrawingState.isDrawing]);
   
   useEffect(() => {
     document.addEventListener('paste', handlePaste);
@@ -401,6 +425,11 @@ export default function CanvasCraftPage() {
     backgroundPosition: `${viewState.pan.x % scaledGridSize}px ${viewState.pan.y % scaledGridSize}px`,
   };
 
+  const getCursor = () => {
+    if (arrowDrawingState.isDrawing) return 'crosshair';
+    return 'grab';
+  }
+
   return (
     <main
       className="w-screen h-screen overflow-hidden bg-background relative"
@@ -408,9 +437,9 @@ export default function CanvasCraftPage() {
       <div
         ref={canvasRef}
         className={cn(
-          "w-full h-full cursor-grab",
-          {'cursor-crosshair': connectionState.from !== undefined }
+          "w-full h-full",
         )}
+        style={{ cursor: getCursor() }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -438,7 +467,7 @@ export default function CanvasCraftPage() {
             className="w-full h-full relative"
             style={{ transform: `translate(${viewState.pan.x}px, ${viewState.pan.y}px) scale(${viewState.zoom})`, transformOrigin: '0 0' }}
           >
-              <ArrowRenderer arrows={filteredArrows} items={filteredItems} />
+              <ArrowRenderer arrows={[...filteredArrows, ...(previewArrow ? [previewArrow] : [])]} />
 
               {filteredItems.map(item => (
                   <CanvasItem 
@@ -447,13 +476,9 @@ export default function CanvasCraftPage() {
                       zoom={viewState.zoom}
                       onUpdate={handleItemUpdate}
                       onClick={() => handleItemClick(item.id)}
-                      onDoubleClick={() => {
-                        if (item.type !== 'board') {
-                          handleItemDoubleClick(item)
-                        }
-                      }}
+                      onDoubleClick={() => handleItemDoubleClick(item)}
                       onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({x: e.clientX, y: e.clientY, show: true, itemId: item.id})}}
-                      isSelected={connectionState.from === item.id}
+                      isSelected={false}
                   />
               ))}
           </div>
@@ -482,7 +507,7 @@ export default function CanvasCraftPage() {
               </PopoverContent>
           </Popover>
       </div>
-      {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} itemType={items.find(i=>i.id===contextMenu.itemId)?.type} accentColor={accentColor} />}
+      {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} itemType={allCanvasItems.find(i=>i.id===contextMenu.itemId)?.type} accentColor={accentColor} />}
       
       <Toolbar settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
     </main>

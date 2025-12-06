@@ -158,6 +158,12 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
                 onUpdate({ id: item.id, content: e.currentTarget.textContent || ''});
                 setIsEditing(false);
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                }
+              }}
             >
               {item.content}
             </CardTitle>
@@ -186,15 +192,15 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
       )}
       onMouseDown={handleMouseDown}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      onDoubleClick={(e) => { e.stopPropagation(); handleItemDoubleClick(); }}
+      onDoubleClick={(e) => { e.stopPropagation(); if(item.type !== 'board') { handleItemDoubleClick() } else { onDoubleClick() } }}
       onContextMenu={onContextMenu}
     >
       <Card
         className={cn(
           "w-full h-full overflow-hidden transition-colors duration-200 rounded-lg shadow-md",
           item.type === 'image' && 'p-0 border-0',
-          item.type === 'text' && 'bg-card',
-          item.type === 'board' && 'flex items-center justify-center bg-card',
+          item.type === 'text' && 'bg-card/80 backdrop-blur-sm',
+          item.type === 'board' && 'flex items-center justify-center bg-card/80 backdrop-blur-sm',
         )}
       >
         {renderContent()}
