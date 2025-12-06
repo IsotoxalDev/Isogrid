@@ -58,7 +58,7 @@ const INITIAL_ARROWS: ArrowData[] = [
   { id: 'arrow-1', type: 'arrow', start: { x: 360, y: 210 }, end: {x: 490, y: 200}, parentId: null },
 ];
 
-const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '73 56% 60%', showGrid: true, gridStyle: 'dots', gridOpacity: 0.5, vignetteStrength: 100 } };
+const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '72 56% 63%', showGrid: true, gridStyle: 'dots', gridOpacity: 0.5, vignetteStrength: 100 } };
 
 const GRID_SIZE = 40;
 
@@ -198,16 +198,14 @@ export default function CanvasCraftPage() {
         return;
     }
 
-    if (e.button === 0 && !e.metaKey && !e.ctrlKey) {
-        const target = e.target as HTMLElement;
-        const isCanvasClick = target === canvasRef.current || target.dataset.isCanvasBackdrop;
+    const target = e.target as HTMLElement;
+    const isCanvasClick = target === canvasRef.current || target.dataset.isCanvasBackdrop === 'true';
 
-        if (isCanvasClick) {
-            const startPoint = { x: e.clientX, y: e.clientY };
-            setSelectionBox({ start: startPoint, end: startPoint, visible: true });
-            e.stopPropagation();
-            return;
-        }
+    if (e.button === 0 && !e.metaKey && !e.ctrlKey && isCanvasClick) {
+        const startPoint = { x: e.clientX, y: e.clientY };
+        setSelectionBox({ start: startPoint, end: startPoint, visible: true });
+        e.stopPropagation();
+        return;
     }
 
     if (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey))) {
@@ -260,15 +258,30 @@ export default function CanvasCraftPage() {
 
         const selected = filteredItems.filter(item => {
             const itemRect = { x: item.position.x, y: item.position.y, width: item.width, height: item.height };
+            // Check for intersection
             return (
-                itemRect.x + itemRect.width > selectionRect.x &&
                 itemRect.x < selectionRect.x + selectionRect.width &&
-                itemRect.y + itemRect.height > selectionRect.y &&
-                itemRect.y < selectionRect.y + selectionRect.height
+                itemRect.x + itemRect.width > selectionRect.x &&
+                itemRect.y < selectionRect.y + selectionRect.height &&
+                itemRect.y + itemRect.height > selectionRect.y
             );
         }).map(item => item.id);
         
-        setSelectedItemIds(selected);
+        if (e.ctrlKey || e.metaKey) {
+            setSelectedItemIds(prevIds => {
+                const newIds = new Set(prevIds);
+                selected.forEach(id => {
+                    if (newIds.has(id)) {
+                        newIds.delete(id);
+                    } else {
+                        newIds.add(id);
+                    }
+                });
+                return Array.from(newIds);
+            });
+        } else {
+            setSelectedItemIds(selected);
+        }
         setSelectionBox(null);
     }
     isPanning.current = false;
@@ -349,7 +362,7 @@ export default function CanvasCraftPage() {
             ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
         );
     } else {
-        if (!selectedItemIds.includes(id)) {
+        if (!selectedItemIds.includes(id) || selectedItemIds.length > 1) {
             setSelectedItemIds([id]);
         }
     }
@@ -362,6 +375,7 @@ export default function CanvasCraftPage() {
           setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
           setHistory([{ items, arrows }]);
           setHistoryIndex(0);
+          setSelectedItemIds([]);
       }
   };
 
@@ -370,6 +384,7 @@ export default function CanvasCraftPage() {
       setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
       setHistory([{ items, arrows }]);
       setHistoryIndex(0);
+      setSelectedItemIds([]);
   };
 
   const handleBoardSettingsChange = (newSettings: Partial<BoardSettings>) => {
@@ -438,6 +453,7 @@ export default function CanvasCraftPage() {
             setArrowDrawingState({ isDrawing: false, startPoint: null });
             setPreviewArrow(null);
         }
+        setSelectedItemIds([]);
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
@@ -493,7 +509,7 @@ export default function CanvasCraftPage() {
       const target = e.target as HTMLElement;
       const isCanvasClick = target === canvasRef.current || target.dataset.isCanvasBackdrop;
 
-      if(isCanvasClick && !selectionBox) {
+      if(isCanvasClick) {
           setSelectedItemIds([]);
       }
   }
@@ -585,5 +601,3 @@ export default function CanvasCraftPage() {
     </main>
   );
 }
-
-    
