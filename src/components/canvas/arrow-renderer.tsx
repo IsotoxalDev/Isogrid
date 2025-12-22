@@ -38,6 +38,9 @@ const ArrowRenderer: FC<ArrowRendererProps> = ({ arrows }) => {
         const dx = arrow.end.x - arrow.start.x;
         const dy = arrow.end.y - arrow.start.y;
         const length = Math.sqrt(dx*dx + dy*dy);
+        
+        if (length === 0) return null; // Avoid division by zero
+
         const unitDx = dx / length;
         const unitDy = dy / length;
 
