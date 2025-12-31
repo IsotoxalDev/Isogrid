@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRef, type FC, type MouseEvent, useState, useEffect } from 'react';
@@ -179,7 +180,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
         );
       case 'board':
         return (
-          <CardHeader>
+          <CardHeader className="w-full text-center">
             <CardTitle
               ref={cardTitleRef}
               contentEditable={isEditing}
