@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect, useCallback, type MouseEvent, DragEvent } from 'react';
@@ -25,6 +26,7 @@ import SelectionBox from '@/components/canvas/selection-box';
 import InteractiveArrow from '@/components/canvas/interactive-arrow';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import ItemSettingsPopover from '@/components/canvas/item-settings-popover';
 
 const INITIAL_ITEMS: CanvasItemData[] = [];
 
@@ -312,7 +314,9 @@ export default function IsogridPage() {
     const baseItem = {
       id: `item-${Date.now()}`,
       position,
-      parentId: currentBoardId
+      parentId: currentBoardId,
+      opacity: settings.defaultOpacity,
+      backgroundBlur: settings.defaultBackgroundBlur,
     };
 
     if (type === 'todo') {
@@ -378,6 +382,16 @@ export default function IsogridPage() {
       arrows
     );
   };
+  
+  const handleItemsUpdate = (updates: (Partial<CanvasItemData> & { id: string })[]) => {
+    updateState(
+      items.map(item => {
+        const update = updates.find(u => u.id === item.id);
+        return update ? { ...item, ...update } : item;
+      }),
+      arrows
+    );
+  };
 
   const handleArrowUpdate = (updatedArrow: Partial<ArrowData> & { id: string }) => {
     updateState(
@@ -440,6 +454,11 @@ export default function IsogridPage() {
   const handleSettingsChange = (newSettings: Partial<BoardSettings>) => {
     setSettings(s => ({ ...s, ...newSettings }));
   };
+  
+  const handleItemSettingsChange = (itemSettings: Partial<CanvasItemData>) => {
+    const updates = selectedItemIds.map(id => ({ id, ...itemSettings }));
+    handleItemsUpdate(updates);
+  };
 
   const handlePaste = useCallback(async (event: ClipboardEvent) => {
     const pastedItems = event.clipboardData?.items;
@@ -472,6 +491,8 @@ export default function IsogridPage() {
                         height: height,
                         content: src,
                         parentId: currentBoardId,
+                        opacity: settings.defaultOpacity,
+                        backgroundBlur: settings.defaultBackgroundBlur,
                     };
                     updateState(prev => [...prev, newItem], arrows);
                     toast({ title: "Image pasted successfully!" });
@@ -482,7 +503,7 @@ export default function IsogridPage() {
             return;
         }
     }
-  }, [screenToCanvas, toast, currentBoardId, arrows, items]);
+  }, [screenToCanvas, toast, currentBoardId, arrows, items, settings.defaultOpacity, settings.defaultBackgroundBlur]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -609,6 +630,8 @@ export default function IsogridPage() {
       setContextMenu({ ...contextMenu, show: false });
     }
   };
+
+  const selectedItems = items.filter(item => selectedItemIds.includes(item.id));
 
   return (
     <main
@@ -764,7 +787,15 @@ export default function IsogridPage() {
             </PopoverTrigger>
             <PopoverContent className="w-80">
               <div className="space-y-4">
-                <SettingsPopover settings={settings} onSettingsChange={handleSettingsChange} />
+                <div className="space-y-4">
+                  {selectedItems.length > 0 && (
+                    <div className='space-y-4'>
+                      <ItemSettingsPopover items={selectedItems} onSettingsChange={handleItemSettingsChange} />
+                      <Separator />
+                    </div>
+                  )}
+                  <SettingsPopover settings={settings} onSettingsChange={handleSettingsChange} />
+                </div>
               </div>
             </PopoverContent>
         </Popover>
