@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import CanvasItem from '@/components/canvas/canvas-item';
 import ContextMenu from '@/components/canvas/context-menu';
-import ArrowRenderer from '@/components/canvas/arrow-renderer';
 import Toolbar from '@/components/canvas/toolbar';
 import SettingsPopover from '@/components/canvas/settings-popover';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +22,7 @@ import { ChevronRight, Home, Cog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import SelectionBox from '@/components/canvas/selection-box';
+import InteractiveArrow from '@/components/canvas/interactive-arrow';
 
 const INITIAL_ITEMS: CanvasItemData[] = [
   {
@@ -87,7 +87,8 @@ export default function CanvasCraftPage() {
   
   const [selectionBox, setSelectionBox] = useState<{ start: Point; end: Point; visible: boolean } | null>(null);
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
-  
+  const [selectedArrowIds, setSelectedArrowIds] = useState<string[]>([]);
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const isPanning = useRef(false);
   const lastPanPoint = useRef<Point>({ x: 0, y: 0 });
@@ -204,6 +205,8 @@ export default function CanvasCraftPage() {
     if (e.button === 0 && !e.metaKey && !e.ctrlKey && isCanvasClick) {
         const startPoint = { x: e.clientX, y: e.clientY };
         setSelectionBox({ start: startPoint, end: startPoint, visible: true });
+        setSelectedItemIds([]);
+        setSelectedArrowIds([]);
         e.stopPropagation();
         return;
     }
@@ -247,7 +250,7 @@ export default function CanvasCraftPage() {
   const handleMouseUp = (e: MouseEvent<HTMLDivElement>) => {
     if (selectionBox && selectionBox.visible) {
         const startCanvas = screenToCanvas(selectionBox.start);
-        const endCanvas = screenToCanvas(selectionBox.end);
+        const endCanvas = screenTocanvas(selectionBox.end);
 
         const selectionRect = {
             x: Math.min(startCanvas.x, endCanvas.x),
@@ -256,9 +259,8 @@ export default function CanvasCraftPage() {
             height: Math.abs(startCanvas.y - endCanvas.y),
         };
 
-        const selected = filteredItems.filter(item => {
+        const selectedIds = filteredItems.filter(item => {
             const itemRect = { x: item.position.x, y: item.position.y, width: item.width, height: item.height };
-            // Check for intersection
             return (
                 itemRect.x < selectionRect.x + selectionRect.width &&
                 itemRect.x + itemRect.width > selectionRect.x &&
@@ -270,7 +272,7 @@ export default function CanvasCraftPage() {
         if (e.ctrlKey || e.metaKey) {
             setSelectedItemIds(prevIds => {
                 const newIds = new Set(prevIds);
-                selected.forEach(id => {
+                selectedIds.forEach(id => {
                     if (newIds.has(id)) {
                         newIds.delete(id);
                     } else {
@@ -280,7 +282,7 @@ export default function CanvasCraftPage() {
                 return Array.from(newIds);
             });
         } else {
-            setSelectedItemIds(selected);
+            setSelectedItemIds(selectedIds);
         }
         setSelectionBox(null);
     }
@@ -292,8 +294,8 @@ export default function CanvasCraftPage() {
             setArrowDrawingState({ isDrawing: false, startPoint: null });
             setPreviewArrow(null);
         } else {
-            const clickedItem = (e.target as HTMLElement).closest('[data-item-id]');
-            const itemId = clickedItem ? clickedItem.getAttribute('data-item-id') : undefined;
+            const clickedItem = (e.target as HTMLElement).closest('[data-item-id], [data-arrow-id]');
+            const itemId = clickedItem ? (clickedItem.getAttribute('data-item-id') || clickedItem.getAttribute('data-arrow-id')) : undefined;
             setContextMenu({ x: e.clientX, y: e.clientY, show: true, itemId: itemId || undefined });
         }
     }
@@ -354,9 +356,17 @@ export default function CanvasCraftPage() {
       arrows
     );
   };
+
+  const handleArrowUpdate = (updatedArrow: Partial<ArrowData> & { id: string }) => {
+    updateState(
+        items,
+        arrows.map(arrow => arrow.id === updatedArrow.id ? { ...arrow, ...updatedArrow } : arrow)
+    );
+  }
   
   const handleItemClick = (id: string, e: MouseEvent) => {
     e.stopPropagation();
+    setSelectedArrowIds([]);
     if (e.ctrlKey || e.metaKey) {
         setSelectedItemIds(ids => 
             ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
@@ -364,6 +374,20 @@ export default function CanvasCraftPage() {
     } else {
         if (!selectedItemIds.includes(id) || selectedItemIds.length > 1) {
             setSelectedItemIds([id]);
+        }
+    }
+  };
+  
+  const handleArrowClick = (id: string, e: MouseEvent) => {
+    e.stopPropagation();
+    setSelectedItemIds([]);
+    if (e.ctrlKey || e.metaKey) {
+        setSelectedArrowIds(ids =>
+            ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
+        );
+    } else {
+        if (!selectedArrowIds.includes(id) || selectedArrowIds.length > 1) {
+            setSelectedArrowIds([id]);
         }
     }
   };
@@ -376,6 +400,7 @@ export default function CanvasCraftPage() {
           setHistory([{ items, arrows }]);
           setHistoryIndex(0);
           setSelectedItemIds([]);
+          setSelectedArrowIds([]);
       }
   };
 
@@ -385,6 +410,7 @@ export default function CanvasCraftPage() {
       setHistory([{ items, arrows }]);
       setHistoryIndex(0);
       setSelectedItemIds([]);
+      setSelectedArrowIds([]);
   };
 
   const handleBoardSettingsChange = (newSettings: Partial<BoardSettings>) => {
@@ -454,6 +480,7 @@ export default function CanvasCraftPage() {
             setPreviewArrow(null);
         }
         setSelectedItemIds([]);
+        setSelectedArrowIds([]);
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
@@ -511,6 +538,7 @@ export default function CanvasCraftPage() {
 
       if(isCanvasClick) {
           setSelectedItemIds([]);
+          setSelectedArrowIds([]);
       }
   }
 
@@ -554,7 +582,52 @@ export default function CanvasCraftPage() {
             className="w-full h-full relative"
             style={{ transform: `translate(${viewState.pan.x}px, ${viewState.pan.y}px) scale(${viewState.zoom})`, transformOrigin: '0 0' }}
           >
-              <ArrowRenderer arrows={[...filteredArrows, ...(previewArrow ? [previewArrow] : [])]} />
+             <svg
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                    overflow: 'visible',
+                }}
+             >
+                <defs>
+                    <marker
+                    id="arrowhead"
+                    markerWidth="10"
+                    markerHeight="7"
+                    refX="10"
+                    refY="3.5"
+                    orient="auto"
+                    >
+                    <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--primary))" />
+                    </marker>
+                </defs>
+
+                {previewArrow && (
+                  <line
+                      x1={previewArrow.start.x}
+                      y1={previewArrow.start.y}
+                      x2={previewArrow.end.x}
+                      y2={previewArrow.end.y}
+                      stroke="hsl(var(--primary))"
+                      strokeWidth="2"
+                      markerEnd="url(#arrowhead)"
+                  />
+                )}
+             </svg>
+              {filteredArrows.map(arrow => (
+                  <InteractiveArrow 
+                    key={arrow.id}
+                    arrow={arrow}
+                    zoom={viewState.zoom}
+                    onUpdate={handleArrowUpdate}
+                    onClick={(e) => handleArrowClick(arrow.id, e)}
+                    isSelected={selectedArrowIds.includes(arrow.id)}
+                  />
+              ))}
 
               {filteredItems.map(item => (
                   <CanvasItem 

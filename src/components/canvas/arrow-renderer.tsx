@@ -2,12 +2,15 @@
 
 import type { FC } from 'react';
 import { ArrowData } from '@/lib/types';
+import { getArrowPath } from '@/lib/utils';
+import { items } from 'prismjs';
 
 interface ArrowRendererProps {
   arrows: ArrowData[];
+  items: CanvasItemData[];
 }
 
-const ArrowRenderer: FC<ArrowRendererProps> = ({ arrows }) => {
+const ArrowRenderer: FC<ArrowRendererProps> = ({ arrows, items }) => {
   return (
     <svg
       style={{
@@ -25,7 +28,7 @@ const ArrowRenderer: FC<ArrowRendererProps> = ({ arrows }) => {
           id="arrowhead"
           markerWidth="10"
           markerHeight="7"
-          refX="10"
+          refX="0"
           refY="3.5"
           orient="auto"
         >
@@ -33,31 +36,20 @@ const ArrowRenderer: FC<ArrowRendererProps> = ({ arrows }) => {
         </marker>
       </defs>
       {arrows.map(arrow => {
-        if (!arrow.start || !arrow.end) return null;
-        
-        const dx = arrow.end.x - arrow.start.x;
-        const dy = arrow.end.y - arrow.start.y;
-        const length = Math.sqrt(dx*dx + dy*dy);
-        
-        if (length === 0) return null; // Avoid division by zero
+        const startItem = items.find(item => item.id === arrow.start.itemId);
+        const endItem = items.find(item => item.id === arrow.end.itemId);
+        if(!startItem || !endItem) return null;
 
-        const unitDx = dx / length;
-        const unitDy = dy / length;
-
-        // Subtract arrowhead length from the end point
-        const endX = arrow.end.x - unitDx * 10;
-        const endY = arrow.end.y - unitDy * 10;
+        const { path, endPoint } = getArrowPath(startItem, endItem, 10);
 
         return (
-          <line
+          <path
             key={arrow.id}
-            x1={arrow.start.x}
-            y1={arrow.start.y}
-            x2={endX}
-            y2={endY}
+            d={path}
             stroke="hsl(var(--primary))"
             strokeWidth="2"
-            markerEnd="url(#arrowhead)"
+            fill="none"
+            markerEnd={endPoint ? "url(#arrowhead)" : undefined}
           />
         );
       })}
