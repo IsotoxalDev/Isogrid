@@ -202,6 +202,13 @@ export default function CanvasCraftPage() {
     const target = e.target as HTMLElement;
     const isCanvasBackdropClick = target.dataset.isCanvasBackdrop === 'true';
 
+    if (isCanvasBackdropClick) {
+      if (!e.ctrlKey && !e.metaKey) {
+        setSelectedItemIds([]);
+        setSelectedArrowIds([]);
+      }
+    }
+
     if (e.button === 0 && !e.metaKey && !e.ctrlKey && isCanvasBackdropClick) {
         const startPoint = { x: e.clientX, y: e.clientY };
         setSelectionBox({ start: startPoint, end: startPoint, visible: true });
@@ -531,16 +538,6 @@ export default function CanvasCraftPage() {
 
   const handleCanvasClick = (e: MouseEvent<HTMLDivElement>) => {
       if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
-      
-      const target = e.target as HTMLElement;
-      const isCanvasClick = target.dataset.isCanvasBackdrop === 'true';
-
-      if(isCanvasClick) {
-          if (!e.ctrlKey && !e.metaKey) {
-            setSelectedItemIds([]);
-            setSelectedArrowIds([]);
-          }
-      }
   }
 
   return (
