@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import SelectionBox from '@/components/canvas/selection-box';
 import InteractiveArrow from '@/components/canvas/interactive-arrow';
+import { Input } from '@/components/ui/input';
 
 const INITIAL_ITEMS: CanvasItemData[] = [];
 
@@ -59,6 +60,7 @@ export default function CanvasCraftPage() {
   const [selectedArrowIds, setSelectedArrowIds] = useState<string[]>([]);
 
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingBoardId, setEditingBoardId] = useState<string | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const isPanning = useRef(false);
   const lastPanPoint = useRef<Point>({ x: 0, y: 0 });
@@ -492,6 +494,16 @@ export default function CanvasCraftPage() {
       root.style.setProperty('--ring', accentColor);
     }
   }, [accentColor]);
+
+  const handleBoardNameChange = (boardId: string, newName: string) => {
+    // Update the item content
+    handleItemUpdate({ id: boardId, content: newName });
+    
+    // Update the boardStack
+    setBoardStack(stack => stack.map(b => b.id === boardId ? { ...b, name: newName } : b));
+
+    setEditingBoardId(null);
+  };
   
   const scaledGridSize = GRID_SIZE * viewState.zoom;
   
@@ -619,17 +631,40 @@ export default function CanvasCraftPage() {
       </div>
       {selectionBox && selectionBox.visible && <SelectionBox start={selectionBox.start} end={selectionBox.end} />}
       <div className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-background/80 backdrop-blur-sm flex items-center space-x-2">
-          <div className="flex items-center space-x-2 text-sm text-foreground">
-              {boardStack.map((board, index) => (
-                  <div key={board.id} className="flex items-center space-x-2">
-                      {index > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-                      <Button variant="link" className="p-0 h-auto text-sm" onClick={() => navigateToBoard(index)}>
-                        {board.id === 'root' && <Home className="w-4 h-4 mr-2" />}
-                        {board.name}
+      <div className="flex items-center space-x-2 text-sm text-foreground">
+          {boardStack.map((board, index) => (
+              <div key={board.id} className="flex items-center space-x-2">
+                  {index > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                  
+                  {editingBoardId === board.id ? (
+                      <Input
+                          type="text"
+                          defaultValue={board.name}
+                          autoFocus
+                          onBlur={(e) => handleBoardNameChange(board.id, e.target.value)}
+                          onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleBoardNameChange(board.id, e.currentTarget.value);
+                              if (e.key === 'Escape') setEditingBoardId(null);
+                          }}
+                          className="h-auto p-0 text-sm bg-transparent border-primary"
+                      />
+                  ) : (
+                      <Button
+                          variant="link"
+                          className="p-0 h-auto text-sm"
+                          onClick={() => navigateToBoard(index)}
+                          onDoubleClick={() => {
+                              if (board.id !== 'root') {
+                                  setEditingBoardId(board.id);
+                              }
+                          }}
+                      >
+                          {board.id === 'root' ? <Home className="w-4 h-4" /> : board.name}
                       </Button>
-                  </div>
-              ))}
-          </div>
+                  )}
+              </div>
+          ))}
+      </div>
           <Popover>
               <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon">
@@ -646,5 +681,3 @@ export default function CanvasCraftPage() {
     </main>
   );
 }
-
-    
