@@ -90,18 +90,6 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange 
                     onValueChange={(value) => onSettingsChange({ gridOpacity: value[0] })}
                     />
                 </div>
-                <Separator className="my-4"/>
-                <div className="grid gap-2">
-                    <Label htmlFor="vignette-strength">Vignette Strength</Label>
-                    <Slider
-                    id="vignette-strength"
-                    min={0}
-                    max={100}
-                    step={1}
-                    defaultValue={[settings.vignetteStrength || 0]}
-                    onValueChange={(value) => onSettingsChange({ vignetteStrength: value[0] })}
-                    />
-                </div>
             </div>
         </div>
     );

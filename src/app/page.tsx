@@ -28,7 +28,7 @@ const INITIAL_ITEMS: CanvasItemData[] = [];
 
 const INITIAL_ARROWS: ArrowData[] = [];
 
-const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '72 56% 63%', showGrid: true, gridStyle: 'dots', gridOpacity: 0.5, vignetteStrength: 100 } };
+const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '72 56% 63%', showGrid: true, gridStyle: 'dots', gridOpacity: 0.5 } };
 
 const GRID_SIZE = 40;
 
@@ -71,7 +71,7 @@ export default function CanvasCraftPage() {
   const currentBoardId = currentBoard.id === 'root' ? null : currentBoard.id;
   
   const combinedSettings = boardStack.reduce((acc, board) => ({ ...acc, ...board.settings }), {} as BoardSettings);
-  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteStrength = 100 } = combinedSettings;
+  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor } = combinedSettings;
 
   const updateState = (newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]), newArrows: ArrowData[] | ((prev: ArrowData[]) => ArrowData[])) => {
     const updatedItems = typeof newItems === 'function' ? newItems(items) : newItems;
@@ -377,7 +377,7 @@ export default function CanvasCraftPage() {
   
   const handleItemDoubleClick = (item: CanvasItemData) => {
       if (item.type === 'board') {
-          const newBoard: Board = {id: item.id, name: item.content, settings: { accentColor: accentColor, showGrid: true, gridStyle: 'dots', gridOpacity: 0.5, vignetteStrength: 100 }};
+          const newBoard: Board = {id: item.id, name: item.content, settings: { accentColor: accentColor, showGrid: true, gridStyle: 'dots', gridOpacity: 0.5 }};
           setBoardStack(stack => [...stack, newBoard]);
           setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
           setHistory([{ items, arrows }]);
@@ -551,16 +551,6 @@ export default function CanvasCraftPage() {
               />
           )}
 
-          {vignetteStrength > 0 && (
-            <div
-              data-is-canvas-backdrop="true"
-              className="absolute inset-0 w-full h-full pointer-events-none"
-              style={{
-                background: `radial-gradient(circle, transparent 40%, hsl(var(--background) / ${vignetteStrength/100}) 100%)`,
-                opacity: 1,
-              }}
-            />
-          )}
           <div 
             className="w-full h-full relative"
             style={{ transform: `translate(${viewState.pan.x}px, ${viewState.pan.y}px) scale(${viewState.zoom})`, transformOrigin: '0 0' }}
