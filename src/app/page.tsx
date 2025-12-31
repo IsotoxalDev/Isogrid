@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import CanvasItem from '@/components/canvas/canvas-item';
 import ContextMenu from '@/components/canvas/context-menu';
-import Toolbar from '@/components/canvas/toolbar';
 import SettingsPopover from '@/components/canvas/settings-popover';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronRight, Home, Cog } from 'lucide-react';
@@ -507,11 +506,11 @@ export default function CanvasCraftPage() {
   }
 
   const handleCanvasClick = (e: MouseEvent<HTMLDivElement>) => {
-    if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
-    
     const target = e.target as HTMLElement;
     const isCanvasBackdropClick = target.dataset.isCanvasBackdrop === 'true';
 
+    if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
+    
     if (isCanvasBackdropClick && !e.ctrlKey && !e.metaKey) {
         setSelectedItemIds([]);
         setSelectedArrowIds([]);
@@ -646,9 +645,6 @@ export default function CanvasCraftPage() {
       </div>
       {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} itemType={allCanvasItems.find(i=>i.id===contextMenu.itemId)?.type} accentColor={accentColor} />}
       
-      <Toolbar settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
     </main>
   );
 }
-
-    
