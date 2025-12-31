@@ -96,6 +96,7 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
             strokeWidth={2 / zoom}
             onMouseDown={(e) => handleHandleMouseDown(e, 'start')}
             style={{ cursor: 'grab' }}
+            className="active:cursor-grabbing"
           />
           <circle
             cx={arrow.end.x}
@@ -106,6 +107,7 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
             strokeWidth={2 / zoom}
             onMouseDown={(e) => handleHandleMouseDown(e, 'end')}
             style={{ cursor: 'grab' }}
+            className="active:cursor-grabbing"
           />
         </>
       )}
