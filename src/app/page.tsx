@@ -200,13 +200,11 @@ export default function CanvasCraftPage() {
     }
 
     const target = e.target as HTMLElement;
-    const isCanvasClick = target === canvasRef.current || target.dataset.isCanvasBackdrop === 'true';
+    const isCanvasBackdropClick = target.dataset.isCanvasBackdrop === 'true';
 
-    if (e.button === 0 && !e.metaKey && !e.ctrlKey && isCanvasClick) {
+    if (e.button === 0 && !e.metaKey && !e.ctrlKey && isCanvasBackdropClick) {
         const startPoint = { x: e.clientX, y: e.clientY };
         setSelectionBox({ start: startPoint, end: startPoint, visible: true });
-        setSelectedItemIds([]);
-        setSelectedArrowIds([]);
         e.stopPropagation();
         return;
     }
@@ -259,7 +257,7 @@ export default function CanvasCraftPage() {
             height: Math.abs(startCanvas.y - endCanvas.y),
         };
 
-        const selectedIds = filteredItems.filter(item => {
+        const newlySelectedItems = filteredItems.filter(item => {
             const itemRect = { x: item.position.x, y: item.position.y, width: item.width, height: item.height };
             return (
                 itemRect.x < selectionRect.x + selectionRect.width &&
@@ -272,7 +270,7 @@ export default function CanvasCraftPage() {
         if (e.ctrlKey || e.metaKey) {
             setSelectedItemIds(prevIds => {
                 const newIds = new Set(prevIds);
-                selectedIds.forEach(id => {
+                newlySelectedItems.forEach(id => {
                     if (newIds.has(id)) {
                         newIds.delete(id);
                     } else {
@@ -282,7 +280,8 @@ export default function CanvasCraftPage() {
                 return Array.from(newIds);
             });
         } else {
-            setSelectedItemIds(selectedIds);
+            setSelectedItemIds(newlySelectedItems);
+            setSelectedArrowIds([]); // Clear arrow selection on new area selection unless ctrl is held
         }
         setSelectionBox(null);
     }
@@ -534,11 +533,13 @@ export default function CanvasCraftPage() {
       if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
       
       const target = e.target as HTMLElement;
-      const isCanvasClick = target === canvasRef.current || target.dataset.isCanvasBackdrop;
+      const isCanvasClick = target.dataset.isCanvasBackdrop === 'true';
 
       if(isCanvasClick) {
-          setSelectedItemIds([]);
-          setSelectedArrowIds([]);
+          if (!e.ctrlKey && !e.metaKey) {
+            setSelectedItemIds([]);
+            setSelectedArrowIds([]);
+          }
       }
   }
 
@@ -674,5 +675,3 @@ export default function CanvasCraftPage() {
     </main>
   );
 }
-
-    

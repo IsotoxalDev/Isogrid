@@ -1,7 +1,6 @@
 'use client';
 
 import { ArrowData, Point } from '@/lib/types';
-import { cn } from '@/lib/utils';
 import { MouseEvent, useRef } from 'react';
 
 interface InteractiveArrowProps {
@@ -17,26 +16,31 @@ const LINE_CLICK_WIDTH = 10;
 const HANDLE_CLICK_RADIUS = 12;
 
 export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSelected }: InteractiveArrowProps) {
-  const lineRef = useRef<SVGLineElement>(null);
+  const latestProps = useRef({ arrow, zoom, onUpdate, onClick });
+  latestProps.current = { arrow, zoom, onUpdate, onClick };
 
   const handleHandleMouseDown = (e: MouseEvent, handle: 'start' | 'end') => {
     e.stopPropagation();
     e.preventDefault();
 
     const dragStartPos = { x: e.clientX, y: e.clientY };
-    const initialArrowPos = { start: { ...arrow.start }, end: { ...arrow.end } };
+    const initialArrowPos = { start: { ...latestProps.current.arrow.start }, end: { ...latestProps.current.arrow.end } };
 
     const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
-      const dx = (moveEvent.clientX - dragStartPos.x) / zoom;
-      const dy = (moveEvent.clientY - dragStartPos.y) / zoom;
+      console.log('Mouse is moving in handleMouseMove');
+
+      const { zoom: currentZoom, onUpdate: currentOnUpdate, arrow: currentArrow } = latestProps.current;
+
+      const dx = (moveEvent.clientX - dragStartPos.x) / currentZoom;
+      const dy = (moveEvent.clientY - dragStartPos.y) / currentZoom;
 
       const newPoint = {
         x: initialArrowPos[handle].x + dx,
         y: initialArrowPos[handle].y + dy,
       };
 
-      onUpdate({
-        id: arrow.id,
+      currentOnUpdate({
+        id: currentArrow.id,
         [handle]: newPoint,
       });
     };
@@ -61,16 +65,16 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
     const unitDx = dx / length;
     const unitDy = dy / length;
   
-    // 10 is the markerWidth from the <marker> definition in page.tsx
     endX = arrow.end.x - unitDx * 10; 
     endY = arrow.end.y - unitDy * 10;
   }
 
 
   return (
-    <g data-arrow-id={arrow.id} onClick={onClick} style={{ cursor: 'pointer' }}>
+    <g data-arrow-id={arrow.id} 
+       onClick={(e) => latestProps.current.onClick(e)}
+       style={{ cursor: 'pointer' }}>
       <line
-        ref={lineRef}
         x1={arrow.start.x}
         y1={arrow.start.y}
         x2={endX}
@@ -79,7 +83,6 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
         strokeWidth="2"
         markerEnd="url(#arrowhead)"
       />
-      {/* Invisible wider line for easier clicking */}
       <line
         x1={arrow.start.x}
         y1={arrow.start.y}
@@ -92,7 +95,6 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
       
       {isSelected && (
         <>
-          {/* Visible Handle */}
           <circle
             cx={arrow.start.x}
             cy={arrow.start.y}
@@ -102,18 +104,16 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
             strokeWidth={2 / zoom}
             style={{ pointerEvents: 'none' }}
           />
-          {/* Invisible Click Area */}
           <circle
             cx={arrow.start.x}
             cy={arrow.start.y}
             r={HANDLE_CLICK_RADIUS / zoom}
             fill="transparent"
-            onMouseDown={(e) => handleHandleMouseDown(e, 'start')}
             style={{ cursor: 'grab' }}
+            onMouseDown={(e) => handleHandleMouseDown(e, 'start')}
             className="active:cursor-grabbing"
           />
 
-          {/* Visible Handle */}
           <circle
             cx={arrow.end.x}
             cy={arrow.end.y}
@@ -123,14 +123,13 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
             strokeWidth={2 / zoom}
             style={{ pointerEvents: 'none' }}
           />
-          {/* Invisible Click Area */}
           <circle
             cx={arrow.end.x}
             cy={arrow.end.y}
             r={HANDLE_CLICK_RADIUS / zoom}
             fill="transparent"
-            onMouseDown={(e) => handleHandleMouseDown(e, 'end')}
             style={{ cursor: 'grab' }}
+            onMouseDown={(e) => handleHandleMouseDown(e, 'end')}
             className="active:cursor-grabbing"
           />
         </>
