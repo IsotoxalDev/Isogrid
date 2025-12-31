@@ -91,6 +91,18 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange 
                     />
                 </div>
             </div>
+            <Separator />
+            <div className="grid gap-2">
+                <Label htmlFor="vignette-intensity">Vignette Intensity</Label>
+                <Slider
+                    id="vignette-intensity"
+                    min={0}
+                    max={1}
+                    step={0.1}
+                    defaultValue={[settings.vignetteIntensity || 0]}
+                    onValueChange={(value) => onSettingsChange({ vignetteIntensity: value[0] })}
+                />
+            </div>
         </div>
     );
 };

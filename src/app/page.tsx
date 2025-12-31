@@ -28,7 +28,7 @@ const INITIAL_ITEMS: CanvasItemData[] = [];
 
 const INITIAL_ARROWS: ArrowData[] = [];
 
-const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '72 56% 63%', showGrid: true, gridStyle: 'dots', gridOpacity: 0.5 } };
+const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '72 56% 63%', showGrid: true, gridStyle: 'dots', gridOpacity: 0.5, vignetteIntensity: 0.5 } };
 
 const GRID_SIZE = 40;
 
@@ -71,7 +71,7 @@ export default function CanvasCraftPage() {
   const currentBoardId = currentBoard.id === 'root' ? null : currentBoard.id;
   
   const combinedSettings = boardStack.reduce((acc, board) => ({ ...acc, ...board.settings }), {} as BoardSettings);
-  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor } = combinedSettings;
+  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteIntensity = 0.5 } = combinedSettings;
 
   const updateState = (newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]), newArrows: ArrowData[] | ((prev: ArrowData[]) => ArrowData[])) => {
     const updatedItems = typeof newItems === 'function' ? newItems(items) : newItems;
@@ -524,7 +524,17 @@ export default function CanvasCraftPage() {
   }
 
   const handleCanvasClick = (e: MouseEvent<HTMLDivElement>) => {
-    if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
+    const target = e.target as HTMLElement;
+    const isCanvasBackdropClick = target.dataset.isCanvasBackdrop === 'true';
+
+    if (contextMenu.show) {
+      setContextMenu({ ...contextMenu, show: false });
+    }
+    
+    if (isCanvasBackdropClick) {
+      setSelectedItemIds([]);
+      setSelectedArrowIds([]);
+    }
   };
 
   return (
@@ -619,6 +629,10 @@ export default function CanvasCraftPage() {
           </div>
 
       </div>
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{ boxShadow: `inset 0 0 10vw 5vw hsl(0 0% 0% / ${vignetteIntensity})`}}
+      />
       {selectionBox && selectionBox.visible && <SelectionBox start={selectionBox.start} end={selectionBox.end} />}
       <div className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-background/80 backdrop-blur-sm flex items-center space-x-2">
       <div className="flex items-center space-x-2 text-sm text-foreground">
