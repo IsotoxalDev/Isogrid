@@ -14,6 +14,7 @@ interface InteractiveArrowProps {
 
 const HANDLE_SIZE = 8;
 const LINE_CLICK_WIDTH = 10;
+const HANDLE_CLICK_RADIUS = 12;
 
 export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSelected }: InteractiveArrowProps) {
   const lineRef = useRef<SVGLineElement>(null);
@@ -91,6 +92,7 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
       
       {isSelected && (
         <>
+          {/* Visible Handle */}
           <circle
             cx={arrow.start.x}
             cy={arrow.start.y}
@@ -98,10 +100,20 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
             fill="hsl(var(--background))"
             stroke="hsl(var(--ring))"
             strokeWidth={2 / zoom}
+            style={{ pointerEvents: 'none' }}
+          />
+          {/* Invisible Click Area */}
+          <circle
+            cx={arrow.start.x}
+            cy={arrow.start.y}
+            r={HANDLE_CLICK_RADIUS / zoom}
+            fill="transparent"
             onMouseDown={(e) => handleHandleMouseDown(e, 'start')}
             style={{ cursor: 'grab' }}
             className="active:cursor-grabbing"
           />
+
+          {/* Visible Handle */}
           <circle
             cx={arrow.end.x}
             cy={arrow.end.y}
@@ -109,6 +121,14 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
             fill="hsl(var(--background))"
             stroke="hsl(var(--ring))"
             strokeWidth={2 / zoom}
+            style={{ pointerEvents: 'none' }}
+          />
+          {/* Invisible Click Area */}
+          <circle
+            cx={arrow.end.x}
+            cy={arrow.end.y}
+            r={HANDLE_CLICK_RADIUS / zoom}
+            fill="transparent"
             onMouseDown={(e) => handleHandleMouseDown(e, 'end')}
             style={{ cursor: 'grab' }}
             className="active:cursor-grabbing"
@@ -118,5 +138,3 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
     </g>
   );
 }
-
-    
