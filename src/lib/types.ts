@@ -20,8 +20,6 @@ export interface CanvasItemData {
   content: string; // For text content, image src, or board/todo title
   parentId: string | null; // null for root board
   todos?: TodoListItem[]; // only for 'todo' type
-  opacity?: number;
-  backgroundBlur?: number;
 }
 
 export interface ArrowData {
@@ -47,6 +45,8 @@ export interface BoardSettings {
     gridStyle?: GridStyle;
     gridOpacity?: number;
     vignetteIntensity?: number;
+    defaultOpacity?: number;
+    defaultBackgroundBlur?: number;
 }
 
 export interface Board {

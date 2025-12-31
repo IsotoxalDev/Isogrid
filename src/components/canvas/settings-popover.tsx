@@ -33,6 +33,34 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange 
 
     return (
         <div className="grid gap-4">
+            <div>
+              <h4 className="font-medium leading-none">Default Component Settings</h4>
+              <div className="grid gap-2 mt-4">
+                <Label htmlFor="item-opacity">Opacity</Label>
+                <Slider
+                  id="item-opacity"
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  defaultValue={[settings.defaultOpacity ?? 1]}
+                  onValueChange={(value) => onSettingsChange({ defaultOpacity: value[0] })}
+                />
+              </div>
+              <div className="grid gap-2 mt-4">
+                <Label htmlFor="item-blur">Background Blur</Label>
+                <Slider
+                  id="item-blur"
+                  min={0}
+                  max={40}
+                  step={1}
+                  defaultValue={[settings.defaultBackgroundBlur ?? 0]}
+                  onValueChange={(value) => onSettingsChange({ defaultBackgroundBlur: value[0] })}
+                />
+              </div>
+            </div>
+
+            <Separator />
+            
             <h4 className="font-medium leading-none">Board Settings</h4>
             <div className="grid gap-2">
                 <Label htmlFor="accent-color">Accent Color</Label>

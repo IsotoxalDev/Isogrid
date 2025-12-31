@@ -2,7 +2,7 @@
 
 import { useRef, type FC, type MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
-import { CanvasItemData, Point, TodoListItem } from '@/lib/types';
+import { CanvasItemData, Point, TodoListItem, BoardSettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,6 +24,7 @@ interface CanvasItemProps {
   isDropTarget: boolean;
   onDragEnter: () => void;
   onDragLeave: () => void;
+  settings: BoardSettings;
 }
 
 const CanvasItem: FC<CanvasItemProps> = ({ 
@@ -40,7 +41,8 @@ const CanvasItem: FC<CanvasItemProps> = ({
   onTodoDrop,
   isDropTarget,
   onDragEnter,
-  onDragLeave
+  onDragLeave,
+  settings,
 }) => {
   const dragStartPos = useRef<Point>({ x: 0, y: 0 });
   const itemStartPos = useRef<Point>({ x: 0, y: 0 });
@@ -143,9 +145,9 @@ const CanvasItem: FC<CanvasItemProps> = ({
   
   const cardStyle: React.CSSProperties = {};
   if (item.type !== 'image') {
-    cardStyle.backgroundColor = `hsl(var(--card) / ${item.opacity ?? 1})`;
-    if ((item.backgroundBlur ?? 0) > 0) {
-      cardStyle.backdropFilter = `blur(${item.backgroundBlur}px)`;
+    cardStyle.backgroundColor = `hsl(var(--card) / ${settings.defaultOpacity ?? 1})`;
+    if ((settings.defaultBackgroundBlur ?? 0) > 0) {
+      cardStyle.backdropFilter = `blur(${settings.defaultBackgroundBlur}px)`;
     }
   }
 

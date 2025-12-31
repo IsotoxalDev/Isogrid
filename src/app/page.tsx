@@ -24,14 +24,21 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import SelectionBox from '@/components/canvas/selection-box';
 import InteractiveArrow from '@/components/canvas/interactive-arrow';
 import { Input } from '@/components/ui/input';
-import ItemSettingsPopover from '@/components/canvas/item-settings-popover';
 import { Separator } from '@/components/ui/separator';
 
 const INITIAL_ITEMS: CanvasItemData[] = [];
 
 const INITIAL_ARROWS: ArrowData[] = [];
 
-const INITIAL_SETTINGS: BoardSettings = { accentColor: '72 56% 63%', showGrid: true, gridStyle: 'dots', gridOpacity: 0.5, vignetteIntensity: 0.5 };
+const INITIAL_SETTINGS: BoardSettings = { 
+  accentColor: '72 56% 63%', 
+  showGrid: true, 
+  gridStyle: 'dots', 
+  gridOpacity: 0.5, 
+  vignetteIntensity: 0.5,
+  defaultOpacity: 1,
+  defaultBackgroundBlur: 0
+};
 
 const ROOT_BOARD: Board = { id: 'root', name: 'Home' };
 
@@ -132,8 +139,7 @@ export default function IsogridPage() {
   const filteredItems = items.filter(item => item.parentId === currentBoardId);
   const filteredArrows = arrows.filter(arrow => arrow.parentId === currentBoardId);
   const allCanvasItems: AnyCanvasItem[] = [...filteredItems, ...filteredArrows];
-  const selectedItems = items.filter(item => selectedItemIds.includes(item.id));
-
+  
   const screenToCanvas = useCallback((screenPoint: Point): Point => {
     if (!canvasRef.current) return screenPoint;
     const rect = canvasRef.current.getBoundingClientRect();
@@ -306,9 +312,7 @@ export default function IsogridPage() {
     const baseItem = {
       id: `item-${Date.now()}`,
       position,
-      parentId: currentBoardId,
-      opacity: 1,
-      backgroundBlur: 0
+      parentId: currentBoardId
     };
 
     if (type === 'todo') {
@@ -373,15 +377,6 @@ export default function IsogridPage() {
       items.map(item => item.id === updatedItem.id ? { ...item, ...updatedItem } : item),
       arrows
     );
-  };
-  
-  const handleItemsUpdate = (updates: Partial<CanvasItemData>) => {
-    updateState(prevItems => prevItems.map(item => {
-      if (selectedItemIds.includes(item.id)) {
-        return { ...item, ...updates };
-      }
-      return item;
-    }), arrows);
   };
 
   const handleArrowUpdate = (updatedArrow: Partial<ArrowData> & { id: string }) => {
@@ -477,8 +472,6 @@ export default function IsogridPage() {
                         height: height,
                         content: src,
                         parentId: currentBoardId,
-                        opacity: 1,
-                        backgroundBlur: 0
                     };
                     updateState(prev => [...prev, newItem], arrows);
                     toast({ title: "Image pasted successfully!" });
@@ -716,6 +709,7 @@ export default function IsogridPage() {
                       isDropTarget={dropTargetId === item.id}
                       onDragEnter={() => draggedTodo && draggedTodo.sourceListId !== item.id && setDropTargetId(item.id)}
                       onDragLeave={() => setDropTargetId(null)}
+                      settings={settings}
                   />
               ))}
           </div>
@@ -770,12 +764,6 @@ export default function IsogridPage() {
             </PopoverTrigger>
             <PopoverContent className="w-80">
               <div className="space-y-4">
-                {selectedItemIds.length > 0 && (
-                  <div>
-                    <ItemSettingsPopover items={selectedItems} onSettingsChange={handleItemsUpdate} />
-                    <Separator className="my-4" />
-                  </div>
-                )}
                 <SettingsPopover settings={settings} onSettingsChange={handleSettingsChange} />
               </div>
             </PopoverContent>
