@@ -25,6 +25,7 @@ import SelectionBox from '@/components/canvas/selection-box';
 import InteractiveArrow from '@/components/canvas/interactive-arrow';
 import { Input } from '@/components/ui/input';
 import ItemSettingsPopover from '@/components/canvas/item-settings-popover';
+import { Separator } from '@/components/ui/separator';
 
 const INITIAL_ITEMS: CanvasItemData[] = [];
 
@@ -769,19 +770,6 @@ export default function CanvasCraftPage() {
             ))}
         </div>
 
-        {selectedItemIds.length > 0 && (
-          <Popover>
-              <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                      <Cog className="w-5 h-5"/>
-                  </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80">
-                  <ItemSettingsPopover items={selectedItems} onSettingsChange={handleItemsUpdate} />
-              </PopoverContent>
-          </Popover>
-        )}
-        
         <Popover>
             <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -789,7 +777,15 @@ export default function CanvasCraftPage() {
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80">
+              <div className="space-y-4">
+                {selectedItemIds.length > 0 && (
+                  <div>
+                    <ItemSettingsPopover items={selectedItems} onSettingsChange={handleItemsUpdate} />
+                    <Separator className="my-4" />
+                  </div>
+                )}
                 <SettingsPopover settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
+              </div>
             </PopoverContent>
         </Popover>
       </div>

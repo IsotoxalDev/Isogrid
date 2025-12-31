@@ -50,7 +50,7 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange 
                     ))}
                 </div>
             </div>
-            <Separator />
+            
             <div className="flex items-center justify-between">
                 <Label htmlFor="grid-toggle" className="font-medium">Show Grid</Label>
                 <Switch 
@@ -78,8 +78,8 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange 
                     </div>
                     </RadioGroup>
                 </div>
-                <Separator className="my-4"/>
-                <div className="grid gap-2">
+                
+                <div className="grid gap-2 mt-4">
                     <Label htmlFor="grid-opacity">Grid Opacity</Label>
                     <Slider
                     id="grid-opacity"
@@ -91,7 +91,7 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange 
                     />
                 </div>
             </div>
-            <Separator />
+            
             <div className="grid gap-2">
                 <Label htmlFor="vignette-intensity">Vignette Intensity</Label>
                 <Slider

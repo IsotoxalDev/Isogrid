@@ -20,7 +20,6 @@ const ItemSettingsPopover: FC<ItemSettingsPopoverProps> = ({ items, onSettingsCh
   return (
     <div className="grid gap-4">
       <h4 className="font-medium leading-none">Component Settings</h4>
-      <Separator />
       <div className="grid gap-2">
         <Label htmlFor="item-opacity">Opacity</Label>
         <Slider
@@ -37,7 +36,7 @@ const ItemSettingsPopover: FC<ItemSettingsPopoverProps> = ({ items, onSettingsCh
         <Slider
           id="item-blur"
           min={0}
-          max={20}
+          max={40}
           step={1}
           defaultValue={[averageBlur]}
           onValueChange={(value) => onSettingsChange({ backgroundBlur: value[0] })}
