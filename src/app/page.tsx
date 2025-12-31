@@ -716,51 +716,51 @@ export default function CanvasCraftPage() {
         style={{ boxShadow: `inset 0 0 10vw 5vw hsl(0 0% 0% / ${vignetteIntensity})`}}
       />
       {selectionBox && selectionBox.visible && <SelectionBox start={selectionBox.start} end={selectionBox.end} />}
-      <div className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-background/80 backdrop-blur-sm flex items-center space-x-2">
-      <div className="flex items-center space-x-2 text-sm text-foreground">
-          {boardStack.map((board, index) => (
-              <div key={board.id} className="flex items-center space-x-2">
-                  {index > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-                  
-                  {editingBoardId === board.id ? (
-                      <Input
-                          type="text"
-                          defaultValue={board.name}
-                          autoFocus
-                          onBlur={(e) => handleBoardNameChange(board.id, e.target.value)}
-                          onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleBoardNameChange(board.id, e.currentTarget.value);
-                              if (e.key === 'Escape') setEditingBoardId(null);
-                          }}
-                          className="h-auto p-0 text-sm bg-transparent border-primary"
-                      />
-                  ) : (
-                      <Button
-                          variant="link"
-                          className="p-0 h-auto text-sm"
-                          onClick={() => navigateToBoard(index)}
-                          onDoubleClick={() => {
-                              if (board.id !== 'root') {
-                                  setEditingBoardId(board.id);
-                              }
-                          }}
-                      >
-                          {board.id === 'root' ? <Home className="w-4 h-4" /> : board.name}
-                      </Button>
-                  )}
-              </div>
-          ))}
-      </div>
-          <Popover>
-              <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                      <Cog className="w-5 h-5"/>
-                  </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80">
-                 <SettingsPopover settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
-              </PopoverContent>
-          </Popover>
+      <div className="absolute top-4 right-4 z-10 p-1 rounded-lg bg-background/80 backdrop-blur-sm flex items-center space-x-1">
+        <div className="flex items-center space-x-2 text-sm text-foreground px-2">
+            {boardStack.map((board, index) => (
+                <div key={board.id} className="flex items-center space-x-2">
+                    {index > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                    
+                    {editingBoardId === board.id ? (
+                        <Input
+                            type="text"
+                            defaultValue={board.name}
+                            autoFocus
+                            onBlur={(e) => handleBoardNameChange(board.id, e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleBoardNameChange(board.id, e.currentTarget.value);
+                                if (e.key === 'Escape') setEditingBoardId(null);
+                            }}
+                            className="h-auto p-0 text-sm bg-transparent border-primary"
+                        />
+                    ) : (
+                        <Button
+                            variant="link"
+                            className="p-0 h-auto text-sm"
+                            onClick={() => navigateToBoard(index)}
+                            onDoubleClick={() => {
+                                if (board.id !== 'root') {
+                                    setEditingBoardId(board.id);
+                                }
+                            }}
+                        >
+                            {board.id === 'root' ? <Home className="w-4 h-4" /> : board.name}
+                        </Button>
+                    )}
+                </div>
+            ))}
+        </div>
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon">
+                    <Cog className="w-5 h-5"/>
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+                <SettingsPopover settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
+            </PopoverContent>
+        </Popover>
       </div>
       {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} itemType={allCanvasItems.find(i=>i.id===contextMenu.itemId)?.type} accentColor={accentColor} />}
       
