@@ -31,7 +31,9 @@ const INITIAL_ITEMS: CanvasItemData[] = [];
 
 const INITIAL_ARROWS: ArrowData[] = [];
 
-const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '72 56% 63%', showGrid: true, gridStyle: 'dots', gridOpacity: 0.5, vignetteIntensity: 0.5 } };
+const INITIAL_SETTINGS: BoardSettings = { accentColor: '72 56% 63%', showGrid: true, gridStyle: 'dots', gridOpacity: 0.5, vignetteIntensity: 0.5 };
+
+const ROOT_BOARD: Board = { id: 'root', name: 'Home' };
 
 const GRID_SIZE = 40;
 
@@ -51,13 +53,15 @@ type DraggedTodoInfo = {
 };
 
 
-export default function CanvasCraftPage() {
+export default function IsogridPage() {
   const [items, setItems] = useState<CanvasItemData[]>(INITIAL_ITEMS);
   const [arrows, setArrows] = useState<ArrowData[]>(INITIAL_ARROWS);
   const [boardStack, setBoardStack] = useState<Board[]>([ROOT_BOARD]);
   
   const [history, setHistory] = useState<HistoryState[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
+
+  const [settings, setSettings] = useState<BoardSettings>(INITIAL_SETTINGS);
 
   const [viewState, setViewState] = useState<ViewState>({ zoom: 1, pan: { x: 0, y: 0 } });
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean; itemId?: string }>({ x: 0, y: 0, show: false });
@@ -83,8 +87,7 @@ export default function CanvasCraftPage() {
   const currentBoard = boardStack[boardStack.length - 1];
   const currentBoardId = currentBoard.id === 'root' ? null : currentBoard.id;
   
-  const combinedSettings = boardStack.reduce((acc, board) => ({ ...acc, ...board.settings }), {} as BoardSettings);
-  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteIntensity = 0.5 } = combinedSettings;
+  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteIntensity = 0.5 } = settings;
 
   const updateState = (newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]), newArrows: ArrowData[] | ((prev: ArrowData[]) => ArrowData[])) => {
     const updatedItems = typeof newItems === 'function' ? newItems(items) : newItems;
@@ -418,7 +421,7 @@ export default function CanvasCraftPage() {
   
   const handleItemDoubleClick = (item: CanvasItemData) => {
       if (item.type === 'board') {
-          const newBoard: Board = {id: item.id, name: item.content, settings: { accentColor: accentColor, showGrid: true, gridStyle: 'dots', gridOpacity: 0.5 }};
+          const newBoard: Board = {id: item.id, name: item.content};
           setBoardStack(stack => [...stack, newBoard]);
           setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
           setHistory([{ items, arrows }]);
@@ -439,19 +442,8 @@ export default function CanvasCraftPage() {
       setSelectedArrowIds([]);
   };
 
-  const handleBoardSettingsChange = (newSettings: Partial<BoardSettings>) => {
-    setBoardStack(stack => {
-        const newStack = [...stack];
-        const currentBoardIndex = newStack.length - 1;
-        newStack[currentBoardIndex] = {
-            ...newStack[currentBoardIndex],
-            settings: {
-                ...newStack[currentBoardIndex].settings,
-                ...newSettings
-            }
-        };
-        return newStack;
-    });
+  const handleSettingsChange = (newSettings: Partial<BoardSettings>) => {
+    setSettings(s => ({ ...s, ...newSettings }));
   };
 
   const handlePaste = useCallback(async (event: ClipboardEvent) => {
@@ -784,7 +776,7 @@ export default function CanvasCraftPage() {
                     <Separator className="my-4" />
                   </div>
                 )}
-                <SettingsPopover settings={combinedSettings} onSettingsChange={handleBoardSettingsChange} />
+                <SettingsPopover settings={settings} onSettingsChange={handleSettingsChange} />
               </div>
             </PopoverContent>
         </Popover>

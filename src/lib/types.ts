@@ -52,5 +52,4 @@ export interface BoardSettings {
 export interface Board {
     id: string;
     name: string;
-    settings: BoardSettings;
 }

@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'CanvasCraft',
+  title: 'Isogrid',
   description: 'Your infinite digital workspace for creative collaboration.',
 };
 

@@ -1,6 +1,6 @@
-# CanvasCraft
+# Isogrid
 
-CanvasCraft is an infinite digital workspace for creative collaboration. It provides a simple and intuitive canvas for you to organize your ideas, create mood boards, and visualize your thoughts.
+Isogrid is an infinite digital workspace for creative collaboration. It provides a simple and intuitive canvas for you to organize your ideas, create mood boards, and visualize your thoughts.
 
 ## Features
 
@@ -18,4 +18,4 @@ To get started, simply run the development server:
 npm run dev
 ```
 
-Then open your browser to [http://localhost:9002](http://localhost:9002) to start using CanvasCraft.
+Then open your browser to [http://localhost:9002](http://localhost:9002) to start using Isogrid.
