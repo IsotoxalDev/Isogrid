@@ -53,13 +53,17 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
   const dy = arrow.end.y - arrow.start.y;
   const length = Math.sqrt(dx * dx + dy * dy);
 
-  if (length === 0) return null;
-
-  const unitDx = dx / length;
-  const unitDy = dy / length;
-
-  const endX = arrow.end.x - unitDx * 10; // 10 is the markerWidth
-  const endY = arrow.end.y - unitDy * 10;
+  let endX = arrow.end.x;
+  let endY = arrow.end.y;
+  
+  if (length > 0) {
+    const unitDx = dx / length;
+    const unitDy = dy / length;
+  
+    // 10 is the markerWidth from the <marker> definition in page.tsx
+    endX = arrow.end.x - unitDx * 10; 
+    endY = arrow.end.y - unitDy * 10;
+  }
 
 
   return (
