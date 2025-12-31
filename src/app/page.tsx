@@ -537,8 +537,16 @@ export default function CanvasCraftPage() {
   }
 
   const handleCanvasClick = (e: MouseEvent<HTMLDivElement>) => {
-      if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
-  }
+    // Close context menu regardless
+    if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
+    
+    // If we reach this point, it means the click was NOT on an item or arrow
+    // (because they call e.stopPropagation())
+    if (!e.ctrlKey && !e.metaKey) {
+      setSelectedItemIds([]);
+      setSelectedArrowIds([]);
+    }
+  };
 
   return (
     <main
