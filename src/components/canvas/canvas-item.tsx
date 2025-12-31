@@ -140,6 +140,15 @@ const CanvasItem: FC<CanvasItemProps> = ({
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
   }
+  
+  const cardStyle: React.CSSProperties = {};
+  if (item.type !== 'image') {
+    cardStyle.backgroundColor = `hsl(var(--card) / ${item.opacity ?? 1})`;
+    if ((item.backgroundBlur ?? 0) > 0) {
+      cardStyle.backdropFilter = `blur(${item.backgroundBlur}px)`;
+    }
+  }
+
 
   const renderContent = () => {
     switch (item.type) {
@@ -266,12 +275,13 @@ const CanvasItem: FC<CanvasItemProps> = ({
       onContextMenu={onContextMenu}
     >
       <Card
+        style={cardStyle}
         className={cn(
           "w-full h-full overflow-hidden transition-colors duration-200 rounded-lg shadow-md flex flex-col",
           item.type === 'image' && 'p-0 border-0',
-          item.type === 'text' && 'bg-card/90 backdrop-blur-sm',
-          item.type === 'board' && 'flex items-center justify-center bg-card/90 backdrop-blur-sm',
-          item.type === 'todo' && 'bg-card/90 backdrop-blur-sm'
+          item.type === 'text' && '',
+          item.type === 'board' && 'flex items-center justify-center',
+          item.type === 'todo' && ''
         )}
       >
         {renderContent()}

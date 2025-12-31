@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import SelectionBox from '@/components/canvas/selection-box';
 import InteractiveArrow from '@/components/canvas/interactive-arrow';
 import { Input } from '@/components/ui/input';
+import ItemSettingsPopover from '@/components/canvas/item-settings-popover';
 
 const INITIAL_ITEMS: CanvasItemData[] = [];
 
@@ -127,6 +128,7 @@ export default function CanvasCraftPage() {
   const filteredItems = items.filter(item => item.parentId === currentBoardId);
   const filteredArrows = arrows.filter(arrow => arrow.parentId === currentBoardId);
   const allCanvasItems: AnyCanvasItem[] = [...filteredItems, ...filteredArrows];
+  const selectedItems = items.filter(item => selectedItemIds.includes(item.id));
 
   const screenToCanvas = useCallback((screenPoint: Point): Point => {
     if (!canvasRef.current) return screenPoint;
@@ -297,26 +299,30 @@ export default function CanvasCraftPage() {
 
   const addItem = (type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo'>, position: Point) => {
     let newItem: CanvasItemData;
+    const baseItem = {
+      id: `item-${Date.now()}`,
+      position,
+      parentId: currentBoardId,
+      opacity: 1,
+      backgroundBlur: 0
+    };
+
     if (type === 'todo') {
       newItem = {
-        id: `item-${Date.now()}`,
+        ...baseItem,
         type,
-        position,
         width: 300,
         height: 250,
         content: 'New Todo List',
         todos: [],
-        parentId: currentBoardId,
       };
     } else {
       newItem = {
-        id: `item-${Date.now()}`,
+        ...baseItem,
         type,
-        position,
         width: type === 'image' || type === 'board' ? 300 : 250,
         height: type === 'image' || type === 'board' ? 200 : 100,
         content: type === 'text' ? 'New Text' : type === 'board' ? 'New Board' : PlaceHolderImages[0].imageUrl,
-        parentId: currentBoardId
       };
     }
     updateState(prevItems => [...prevItems, newItem], arrows);
@@ -363,6 +369,15 @@ export default function CanvasCraftPage() {
       items.map(item => item.id === updatedItem.id ? { ...item, ...updatedItem } : item),
       arrows
     );
+  };
+  
+  const handleItemsUpdate = (updates: Partial<CanvasItemData>) => {
+    updateState(prevItems => prevItems.map(item => {
+      if (selectedItemIds.includes(item.id)) {
+        return { ...item, ...updates };
+      }
+      return item;
+    }), arrows);
   };
 
   const handleArrowUpdate = (updatedArrow: Partial<ArrowData> & { id: string }) => {
@@ -469,6 +484,8 @@ export default function CanvasCraftPage() {
                         height: height,
                         content: src,
                         parentId: currentBoardId,
+                        opacity: 1,
+                        backgroundBlur: 0
                     };
                     updateState(prev => [...prev, newItem], arrows);
                     toast({ title: "Image pasted successfully!" });
@@ -716,8 +733,8 @@ export default function CanvasCraftPage() {
         style={{ boxShadow: `inset 0 0 10vw 5vw hsl(0 0% 0% / ${vignetteIntensity})`}}
       />
       {selectionBox && selectionBox.visible && <SelectionBox start={selectionBox.start} end={selectionBox.end} />}
-      <div className="absolute top-4 right-4 z-10 p-1 rounded-lg bg-background/80 backdrop-blur-sm flex items-center space-x-1">
-        <div className="flex items-center space-x-2 text-sm text-foreground px-2">
+      <div className="absolute top-4 right-4 z-10 p-1 rounded-lg bg-background/80 backdrop-blur-sm flex items-center gap-1">
+        <div className="flex items-center text-sm text-foreground px-2">
             {boardStack.map((board, index) => (
                 <div key={board.id} className="flex items-center space-x-2">
                     {index > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
@@ -751,6 +768,20 @@ export default function CanvasCraftPage() {
                 </div>
             ))}
         </div>
+
+        {selectedItemIds.length > 0 && (
+          <Popover>
+              <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                      <Cog className="w-5 h-5"/>
+                  </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                  <ItemSettingsPopover items={selectedItems} onSettingsChange={handleItemsUpdate} />
+              </PopoverContent>
+          </Popover>
+        )}
+        
         <Popover>
             <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon">
