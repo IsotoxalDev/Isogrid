@@ -150,6 +150,15 @@ export default function CanvasCraftPage() {
   
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
+     const target = e.target as HTMLElement;
+    const isCanvasBackdropClick = target.dataset.isCanvasBackdrop === 'true';
+
+    if (isCanvasBackdropClick) {
+      if (!e.ctrlKey && !e.metaKey) {
+        setSelectedItemIds([]);
+        setSelectedArrowIds([]);
+      }
+    }
 
     if (arrowDrawingState.isDrawing) {
         const canvasPos = screenToCanvas({ x: e.clientX, y: e.clientY });
@@ -171,15 +180,6 @@ export default function CanvasCraftPage() {
         return;
     }
 
-    const target = e.target as HTMLElement;
-    const isCanvasBackdropClick = target.dataset.isCanvasBackdrop === 'true';
-
-    if (isCanvasBackdropClick) {
-      if (!e.ctrlKey && !e.metaKey) {
-        setSelectedItemIds([]);
-        setSelectedArrowIds([]);
-      }
-    }
 
     if (e.button === 0 && !e.metaKey && !e.ctrlKey && isCanvasBackdropClick) {
         const startPoint = { x: e.clientX, y: e.clientY };
@@ -284,16 +284,30 @@ export default function CanvasCraftPage() {
     e.preventDefault();
   };
 
-  const addItem = (type: Extract<CanvasItemType, 'text' | 'image' | 'board'>, position: Point) => {
-    const newItem: CanvasItemData = {
-      id: `item-${Date.now()}`,
-      type,
-      position,
-      width: type === 'image' || type === 'board' ? 300 : 250,
-      height: type === 'image' || type === 'board' ? 200 : 100,
-      content: type === 'text' ? 'New Text' : type === 'board' ? 'New Board' : PlaceHolderImages[0].imageUrl,
-      parentId: currentBoardId
-    };
+  const addItem = (type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo'>, position: Point) => {
+    let newItem: CanvasItemData;
+    if (type === 'todo') {
+      newItem = {
+        id: `item-${Date.now()}`,
+        type,
+        position,
+        width: 300,
+        height: 250,
+        content: 'New Todo List',
+        todos: [],
+        parentId: currentBoardId,
+      };
+    } else {
+      newItem = {
+        id: `item-${Date.now()}`,
+        type,
+        position,
+        width: type === 'image' || type === 'board' ? 300 : 250,
+        height: type === 'image' || type === 'board' ? 200 : 100,
+        content: type === 'text' ? 'New Text' : type === 'board' ? 'New Board' : PlaceHolderImages[0].imageUrl,
+        parentId: currentBoardId
+      };
+    }
     updateState(prevItems => [...prevItems, newItem], arrows);
     setContextMenu({ ...contextMenu, show: false });
   };
@@ -306,7 +320,7 @@ export default function CanvasCraftPage() {
     setContextMenu({ ...contextMenu, show: false });
   }
 
-  const handleContextMenuAction = (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow'> | 'delete' | 'enter' | 'edit') => {
+  const handleContextMenuAction = (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow' | 'todo'> | 'delete' | 'enter' | 'edit') => {
     const canvasPos = screenToCanvas({ x: contextMenu.x, y: contextMenu.y });
 
     if (action === 'delete' && contextMenu.itemId) {
@@ -384,7 +398,7 @@ export default function CanvasCraftPage() {
           setHistoryIndex(0);
           setSelectedItemIds([]);
           setSelectedArrowIds([]);
-      } else if (item.type === 'text') {
+      } else if (item.type === 'text' || item.type === 'todo') {
         setEditingItemId(item.id);
       }
   };
@@ -454,7 +468,7 @@ export default function CanvasCraftPage() {
             return;
         }
     }
-  }, [screenToCanvas, toast, currentBoardId, arrows, items, history, historyIndex]);
+  }, [screenToCanvas, toast, currentBoardId, arrows, items]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -524,16 +538,8 @@ export default function CanvasCraftPage() {
   }
 
   const handleCanvasClick = (e: MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    const isCanvasBackdropClick = target.dataset.isCanvasBackdrop === 'true';
-
     if (contextMenu.show) {
       setContextMenu({ ...contextMenu, show: false });
-    }
-    
-    if (isCanvasBackdropClick) {
-      setSelectedItemIds([]);
-      setSelectedArrowIds([]);
     }
   };
 

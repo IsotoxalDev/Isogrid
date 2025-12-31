@@ -4,8 +4,9 @@ import { useRef, type FC, type MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { CanvasItemData, Point } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import TodoItem from './todo-item';
 
 interface CanvasItemProps {
   item: CanvasItemData;
@@ -29,7 +30,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
   const MIN_SIZE = 40;
 
   const handleMouseDown = (e: MouseEvent) => {
-    if ((e.target as HTMLElement).tagName.toLowerCase() === 'textarea' || (e.target as HTMLElement).closest('.no-drag')) {
+    if ((e.target as HTMLElement).closest('.no-drag, [data-no-drag="true"]')) {
       return;
     }
 
@@ -67,7 +68,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
       if (item.type === 'text' && textareaRef.current) {
         textareaRef.current.focus();
         textareaRef.current.select();
-      } else if (item.type === 'board' && cardTitleRef.current) {
+      } else if ((item.type === 'board' || item.type === 'todo') && cardTitleRef.current) {
         cardTitleRef.current.focus();
         const range = document.createRange();
         const sel = window.getSelection();
@@ -167,6 +168,34 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
             </CardTitle>
           </CardHeader>
         );
+      case 'todo':
+        return (
+          <>
+            <CardHeader>
+              <CardTitle
+                ref={cardTitleRef}
+                contentEditable={isEditing}
+                suppressContentEditableWarning
+                className={cn("outline-none rounded-sm px-1 text-lg", isEditing && "ring-2 ring-primary no-drag")}
+                onBlur={(e) => {
+                  onUpdate({ id: item.id, content: e.currentTarget.textContent || '' });
+                  handleBlur();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }
+                }}
+              >
+                {item.content}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-2 pt-0 h-full">
+              <TodoItem item={item} onUpdate={onUpdate} />
+            </CardContent>
+          </>
+        );
       default:
         return null;
     }
@@ -195,16 +224,17 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
     >
       <Card
         className={cn(
-          "w-full h-full overflow-hidden transition-colors duration-200 rounded-lg shadow-md",
+          "w-full h-full overflow-hidden transition-colors duration-200 rounded-lg shadow-md flex flex-col",
           item.type === 'image' && 'p-0 border-0',
           item.type === 'text' && 'bg-card/90 backdrop-blur-sm',
           item.type === 'board' && 'flex items-center justify-center bg-card/90 backdrop-blur-sm',
+          item.type === 'todo' && 'bg-card/90 backdrop-blur-sm'
         )}
       >
         {renderContent()}
       </Card>
       <div 
-        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
+        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize no-drag"
         onMouseDown={handleResizeMouseDown}
       />
     </div>
@@ -212,5 +242,3 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
 };
 
 export default CanvasItem;
-
-    

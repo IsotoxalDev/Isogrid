@@ -3,16 +3,23 @@ export type Point = {
   y: number;
 };
 
-export type CanvasItemType = 'text' | 'image' | 'board' | 'arrow';
+export type CanvasItemType = 'text' | 'image' | 'board' | 'arrow' | 'todo';
+
+export type TodoListItem = {
+  id: string;
+  text: string;
+  completed: boolean;
+};
 
 export interface CanvasItemData {
   id: string;
-  type: Extract<CanvasItemType, 'text' | 'image' | 'board'>;
+  type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo'>;
   position: Point;
   width: number;
   height: number;
-  content: string; // For text content, image src, or board title
+  content: string; // For text content, image src, or board/todo title
   parentId: string | null; // null for root board
+  todos?: TodoListItem[]; // only for 'todo' type
 }
 
 export interface ArrowData {
