@@ -24,39 +24,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import SelectionBox from '@/components/canvas/selection-box';
 import InteractiveArrow from '@/components/canvas/interactive-arrow';
 
-const INITIAL_ITEMS: CanvasItemData[] = [
-  {
-    id: 'item-1',
-    type: 'text',
-    position: { x: 100, y: 150 },
-    width: 250,
-    height: 120,
-    content: 'Welcome to CanvasCraft! \n\nRight-click to add items. Double-click an item to edit it.',
-    parentId: null,
-  },
-  {
-    id: 'item-2',
-    type: 'board',
-    position: { x: 500, y: 100 },
-    width: 300,
-    height: 200,
-    content: 'My First Board',
-    parentId: null,
-  },
-  {
-    id: 'item-3',
-    type: 'image',
-    position: { x: 150, y: 400 },
-    width: 300,
-    height: 200,
-    content: PlaceHolderImages[0].imageUrl,
-    parentId: null,
-  },
-];
+const INITIAL_ITEMS: CanvasItemData[] = [];
 
-const INITIAL_ARROWS: ArrowData[] = [
-  { id: 'arrow-1', type: 'arrow', start: { x: 360, y: 210 }, end: {x: 490, y: 200}, parentId: null },
-];
+const INITIAL_ARROWS: ArrowData[] = [];
 
 const ROOT_BOARD: Board = { id: 'root', name: 'Home', settings: { accentColor: '72 56% 63%', showGrid: true, gridStyle: 'dots', gridOpacity: 0.5, vignetteStrength: 100 } };
 
@@ -537,14 +507,14 @@ export default function CanvasCraftPage() {
   }
 
   const handleCanvasClick = (e: MouseEvent<HTMLDivElement>) => {
-    // Close context menu regardless
     if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
     
-    // If we reach this point, it means the click was NOT on an item or arrow
-    // (because they call e.stopPropagation())
-    if (!e.ctrlKey && !e.metaKey) {
-      setSelectedItemIds([]);
-      setSelectedArrowIds([]);
+    const target = e.target as HTMLElement;
+    const isCanvasBackdropClick = target.dataset.isCanvasBackdrop === 'true';
+
+    if (isCanvasBackdropClick && !e.ctrlKey && !e.metaKey) {
+        setSelectedItemIds([]);
+        setSelectedArrowIds([]);
     }
   };
 
@@ -680,3 +650,5 @@ export default function CanvasCraftPage() {
     </main>
   );
 }
+
+    
