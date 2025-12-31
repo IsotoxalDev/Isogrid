@@ -84,7 +84,7 @@ export default function CanvasCraftPage() {
     setArrows(updatedArrows);
   };
   
-  const undo = () => {
+  const undo = useCallback(() => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
@@ -92,9 +92,9 @@ export default function CanvasCraftPage() {
       setItems(previousState.items);
       setArrows(previousState.arrows);
     }
-  };
+  }, [history, historyIndex]);
 
-  const redo = () => {
+  const redo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
@@ -102,7 +102,7 @@ export default function CanvasCraftPage() {
       setItems(nextState.items);
       setArrows(nextState.arrows);
     }
-  };
+  }, [history, historyIndex]);
 
   useEffect(() => {
     setHistory([{ items, arrows }]);
@@ -202,7 +202,7 @@ export default function CanvasCraftPage() {
   };
   
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    if (selectionBox && selectionBox.visible) {
+    if (selectionBox?.visible) {
         setSelectionBox(sb => sb ? { ...sb, end: { x: e.clientX, y: e.clientY } } : null);
         return;
     }
@@ -222,7 +222,7 @@ export default function CanvasCraftPage() {
   };
   
   const handleMouseUp = (e: MouseEvent<HTMLDivElement>) => {
-    if (selectionBox && selectionBox.visible) {
+    if (selectionBox?.visible) {
         const startCanvas = screenToCanvas(selectionBox.start);
         const endCanvas = screenToCanvas(selectionBox.end);
 
@@ -444,8 +444,7 @@ export default function CanvasCraftPage() {
             return;
         }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screenToCanvas, toast, currentBoardId, arrows]);
+  }, [screenToCanvas, toast, currentBoardId, arrows, items, history, historyIndex]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -468,8 +467,7 @@ export default function CanvasCraftPage() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyIndex, history.length, arrowDrawingState.isDrawing]);
+  }, [arrowDrawingState.isDrawing, undo, redo]);
   
   useEffect(() => {
     document.addEventListener('paste', handlePaste);
@@ -506,15 +504,7 @@ export default function CanvasCraftPage() {
   }
 
   const handleCanvasClick = (e: MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    const isCanvasBackdropClick = target.dataset.isCanvasBackdrop === 'true';
-
     if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
-    
-    if (isCanvasBackdropClick && !e.ctrlKey && !e.metaKey) {
-        setSelectedItemIds([]);
-        setSelectedArrowIds([]);
-    }
   };
 
   return (
@@ -523,9 +513,7 @@ export default function CanvasCraftPage() {
     >
       <div
         ref={canvasRef}
-        className={cn(
-          "w-full h-full",
-        )}
+        className="w-full h-full"
         style={{ cursor: getCursor() }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
