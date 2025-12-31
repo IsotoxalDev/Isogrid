@@ -148,7 +148,6 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
             height={item.height}
             className="object-cover w-full h-full rounded-lg"
             unoptimized // for blob urls
-            data-ai-hint="abstract art"
           />
         );
       case 'board':
@@ -219,5 +218,3 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
 };
 
 export default CanvasItem;
-
-    
