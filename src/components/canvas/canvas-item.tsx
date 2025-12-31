@@ -2,7 +2,7 @@
 
 import { useRef, type FC, type MouseEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
-import { CanvasItemData, Point } from '@/lib/types';
+import { CanvasItemData, Point, TodoListItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,9 +19,29 @@ interface CanvasItemProps {
   isSelected: boolean;
   isEditing: boolean;
   onEditEnd: () => void;
+  onTodoDragStart: (sourceListId: string, todo: TodoListItem) => void;
+  onTodoDrop: (targetListId: string, targetTodoId?: string) => void;
+  isDropTarget: boolean;
+  onDragEnter: () => void;
+  onDragLeave: () => void;
 }
 
-const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoubleClick, onContextMenu, isSelected, isEditing, onEditEnd }) => {
+const CanvasItem: FC<CanvasItemProps> = ({ 
+  item, 
+  zoom, 
+  onUpdate, 
+  onClick, 
+  onDoubleClick, 
+  onContextMenu, 
+  isSelected, 
+  isEditing, 
+  onEditEnd,
+  onTodoDragStart,
+  onTodoDrop,
+  isDropTarget,
+  onDragEnter,
+  onDragLeave
+}) => {
   const dragStartPos = useRef<Point>({ x: 0, y: 0 });
   const itemStartPos = useRef<Point>({ x: 0, y: 0 });
   const resizeStartSize = useRef({ width: 0, height: 0 });
@@ -193,8 +213,28 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
               </CardTitle>
             </CardHeader>
             <Separator />
-            <CardContent className="p-2 pt-2 h-full">
-              <TodoItem item={item} onUpdate={onUpdate} />
+            <CardContent className="p-2 pt-2 h-full"
+              onDragOver={(e) => {
+                onDragEnter();
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDragLeave={(e) => {
+                onDragLeave();
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                onTodoDrop(item.id);
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              <TodoItem 
+                item={item} 
+                onUpdate={onUpdate}
+                onDragStart={onTodoDragStart}
+                onDrop={onTodoDrop}
+              />
             </CardContent>
           </>
         );
@@ -216,7 +256,8 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
       }}
       className={cn(
         'cursor-grab active:cursor-grabbing transition-shadow duration-200 rounded-lg',
-        isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl',
+        isSelected && !isDropTarget && 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl',
+        isDropTarget && 'ring-2 ring-green-500 ring-offset-2 ring-offset-background shadow-2xl',
         !isSelected && 'hover:shadow-xl'
       )}
       onMouseDown={handleMouseDown}

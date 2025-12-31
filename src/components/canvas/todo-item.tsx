@@ -14,9 +14,11 @@ import { cn } from '@/lib/utils';
 interface TodoItemProps {
     item: CanvasItemData;
     onUpdate: (item: Partial<CanvasItemData> & { id: string }) => void;
+    onDragStart: (sourceListId: string, todo: TodoListItem) => void;
+    onDrop: (targetListId: string, targetTodoId: string) => void;
 }
 
-const TodoItem: FC<TodoItemProps> = ({ item, onUpdate }) => {
+const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop }) => {
     const [newTodoText, setNewTodoText] = useState('');
     const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
     const [editingText, setEditingText] = useState('');
@@ -77,8 +79,9 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate }) => {
         setEditingText('');
     };
     
-    const handleDragStart = (e: DragEvent<HTMLDivElement>, todoId: string) => {
-        dragItem.current = todoId;
+    const handleDragStart = (e: DragEvent<HTMLDivElement>, todo: TodoListItem) => {
+        onDragStart(item.id, todo);
+        dragItem.current = todo.id;
         e.dataTransfer.effectAllowed = 'move';
     };
 
@@ -93,11 +96,13 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate }) => {
             dragOverItem.current = null;
             return;
         }
-
+        
         const currentTodos = [...(item.todos || [])];
         const dragItemIndex = currentTodos.findIndex(t => t.id === dragItem.current);
         const dragOverItemIndex = currentTodos.findIndex(t => t.id === dragOverItem.current);
         
+        // This is for re-ordering within the same list.
+        // The cross-list drop is handled at the page level.
         const [reorderedItem] = currentTodos.splice(dragItemIndex, 1);
         currentTodos.splice(dragOverItemIndex, 0, reorderedItem);
 
@@ -106,6 +111,11 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate }) => {
         dragItem.current = null;
         dragOverItem.current = null;
     };
+    
+    const handleDrop = (e: DragEvent<HTMLDivElement>, targetTodoId: string) => {
+        e.stopPropagation();
+        onDrop(item.id, targetTodoId);
+    }
 
 
     const todos = item.todos || [];
@@ -118,10 +128,11 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate }) => {
                 className="flex items-center space-x-2 py-1 group cursor-grab active:cursor-grabbing" 
                 data-no-drag="true"
                 draggable
-                onDragStart={(e) => handleDragStart(e, todo.id)}
+                onDragStart={(e) => handleDragStart(e, todo)}
                 onDragEnter={(e) => handleDragEnter(e, todo.id)}
                 onDragEnd={handleDragEnd}
                 onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => handleDrop(e, todo.id)}
             >
                 <Checkbox
                     id={todo.id}

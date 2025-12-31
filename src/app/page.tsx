@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, type MouseEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, type MouseEvent, DragEvent } from 'react';
 import {
   CanvasItemData,
   Point,
@@ -10,6 +10,7 @@ import {
   Board,
   BoardSettings,
   AnyCanvasItem,
+  TodoListItem,
 } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -42,6 +43,12 @@ type ArrowDrawingState = {
     startPoint: Point | null;
 }
 
+type DraggedTodoInfo = {
+  sourceListId: string;
+  todo: TodoListItem;
+};
+
+
 export default function CanvasCraftPage() {
   const [items, setItems] = useState<CanvasItemData[]>(INITIAL_ITEMS);
   const [arrows, setArrows] = useState<ArrowData[]>(INITIAL_ARROWS);
@@ -61,6 +68,10 @@ export default function CanvasCraftPage() {
 
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingBoardId, setEditingBoardId] = useState<string | null>(null);
+
+  const [draggedTodo, setDraggedTodo] = useState<DraggedTodoInfo | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const isPanning = useRef(false);
   const lastPanPoint = useRef<Point>({ x: 0, y: 0 });
@@ -519,6 +530,59 @@ export default function CanvasCraftPage() {
     setEditingBoardId(null);
   };
   
+  const handleTodoDragStart = (sourceListId: string, todo: TodoListItem) => {
+    setDraggedTodo({ sourceListId, todo });
+  };
+
+  const handleTodoDrop = (targetListId: string, targetTodoId?: string) => {
+    if (!draggedTodo) return;
+  
+    const { sourceListId, todo } = draggedTodo;
+    
+    // Prevent dropping on the same list if just reordering
+    if (sourceListId === targetListId && !targetTodoId) return;
+
+    updateState(prevItems => {
+        let newItems = [...prevItems];
+        
+        // Remove from source list
+        const sourceListIndex = newItems.findIndex(item => item.id === sourceListId);
+        if (sourceListIndex !== -1) {
+            const sourceList = { ...newItems[sourceListIndex] };
+            sourceList.todos = (sourceList.todos || []).filter(t => t.id !== todo.id);
+            newItems[sourceListIndex] = sourceList;
+        }
+
+        // Add to target list
+        const targetListIndex = newItems.findIndex(item => item.id === targetListId);
+        if (targetListIndex !== -1) {
+            const targetList = { ...newItems[targetListIndex] };
+            let targetTodos = [...(targetList.todos || [])];
+            
+            if (targetTodoId) {
+                // Insert at a specific position
+                const dropIndex = targetTodos.findIndex(t => t.id === targetTodoId);
+                if (dropIndex !== -1) {
+                    targetTodos.splice(dropIndex, 0, todo);
+                } else {
+                    targetTodos.push(todo); // Fallback
+                }
+            } else {
+                // Add to the end
+                targetTodos.push(todo);
+            }
+            
+            targetList.todos = targetTodos;
+            newItems[targetListIndex] = targetList;
+        }
+        
+        return newItems;
+    }, arrows);
+
+    setDraggedTodo(null);
+    setDropTargetId(null);
+  };
+
   const scaledGridSize = GRID_SIZE * viewState.zoom;
   
   const gridBackgroundImage = gridStyle === 'dots' 
@@ -546,6 +610,13 @@ export default function CanvasCraftPage() {
   return (
     <main
       className="w-screen h-screen overflow-hidden bg-background relative"
+      onDragOver={(e) => {
+        if (draggedTodo) e.preventDefault();
+      }}
+      onDrop={() => {
+        setDraggedTodo(null);
+        setDropTargetId(null);
+      }}
     >
       <div
         ref={canvasRef}
@@ -630,6 +701,11 @@ export default function CanvasCraftPage() {
                       isSelected={selectedItemIds.includes(item.id)}
                       isEditing={editingItemId === item.id}
                       onEditEnd={() => setEditingItemId(null)}
+                      onTodoDragStart={handleTodoDragStart}
+                      onTodoDrop={handleTodoDrop}
+                      isDropTarget={dropTargetId === item.id}
+                      onDragEnter={() => draggedTodo && draggedTodo.sourceListId !== item.id && setDropTargetId(item.id)}
+                      onDragLeave={() => setDropTargetId(null)}
                   />
               ))}
           </div>
