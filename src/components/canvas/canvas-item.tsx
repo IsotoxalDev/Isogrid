@@ -6,7 +6,7 @@ import { CanvasItemData, Point } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import TodoItem from './todo-item';
+import TodoItem from '@/components/canvas/todo-item';
 
 interface CanvasItemProps {
   item: CanvasItemData;
