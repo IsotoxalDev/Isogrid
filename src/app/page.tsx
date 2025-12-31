@@ -250,7 +250,7 @@ export default function CanvasCraftPage() {
   const handleMouseUp = (e: MouseEvent<HTMLDivElement>) => {
     if (selectionBox && selectionBox.visible) {
         const startCanvas = screenToCanvas(selectionBox.start);
-        const endCanvas = screenTocanvas(selectionBox.end);
+        const endCanvas = screenToCanvas(selectionBox.end);
 
         const selectionRect = {
             x: Math.min(startCanvas.x, endCanvas.x),
@@ -617,9 +617,8 @@ export default function CanvasCraftPage() {
                       markerEnd="url(#arrowhead)"
                   />
                 )}
-             </svg>
-              {filteredArrows.map(arrow => (
-                  <InteractiveArrow 
+                 {filteredArrows.map(arrow => (
+                  <InteractiveArrow
                     key={arrow.id}
                     arrow={arrow}
                     zoom={viewState.zoom}
@@ -628,7 +627,8 @@ export default function CanvasCraftPage() {
                     isSelected={selectedArrowIds.includes(arrow.id)}
                   />
               ))}
-
+             </svg>
+             
               {filteredItems.map(item => (
                   <CanvasItem 
                       key={item.id}
