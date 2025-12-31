@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type FC, KeyboardEvent } from 'react';
+import { useState, type FC, KeyboardEvent, DragEvent, useRef } from 'react';
 import { CanvasItemData, TodoListItem } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,11 @@ interface TodoItemProps {
 
 const TodoItem: FC<TodoItemProps> = ({ item, onUpdate }) => {
     const [newTodoText, setNewTodoText] = useState('');
+    const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+    const [editingText, setEditingText] = useState('');
+    const dragItem = useRef<string | null>(null);
+    const dragOverItem = useRef<string | null>(null);
+
     const MAX_ITEMS_BEFORE_SCROLL = 4;
 
     const handleAddTodo = () => {
@@ -31,7 +36,7 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate }) => {
         setNewTodoText('');
     };
 
-    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    const handleAddKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleAddTodo();
         }
@@ -47,21 +52,102 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate }) => {
     const handleDeleteTodo = (todoId: string) => {
         const updatedTodos = (item.todos || []).filter(todo => todo.id !== todoId);
         onUpdate({ id: item.id, todos: updatedTodos });
-    }
+    };
+
+    const handleDoubleClick = (todo: TodoListItem) => {
+        setEditingTodoId(todo.id);
+        setEditingText(todo.text);
+    };
+
+    const handleEditKeyDown = (e: KeyboardEvent<HTMLInputElement>, todoId: string) => {
+        if (e.key === 'Enter') {
+            handleUpdateTodoText(todoId);
+        }
+        if (e.key === 'Escape') {
+            setEditingTodoId(null);
+        }
+    };
+
+    const handleUpdateTodoText = (todoId: string) => {
+        const updatedTodos = (item.todos || []).map(todo =>
+            todo.id === todoId ? { ...todo, text: editingText } : todo
+        );
+        onUpdate({ id: item.id, todos: updatedTodos });
+        setEditingTodoId(null);
+        setEditingText('');
+    };
+    
+    const handleDragStart = (e: DragEvent<HTMLDivElement>, todoId: string) => {
+        dragItem.current = todoId;
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragEnter = (e: DragEvent<HTMLDivElement>, todoId: string) => {
+        e.preventDefault();
+        dragOverItem.current = todoId;
+    };
+
+    const handleDragEnd = () => {
+        if (!dragItem.current || !dragOverItem.current || dragItem.current === dragOverItem.current) {
+            dragItem.current = null;
+            dragOverItem.current = null;
+            return;
+        }
+
+        const currentTodos = [...(item.todos || [])];
+        const dragItemIndex = currentTodos.findIndex(t => t.id === dragItem.current);
+        const dragOverItemIndex = currentTodos.findIndex(t => t.id === dragOverItem.current);
+        
+        const [reorderedItem] = currentTodos.splice(dragItemIndex, 1);
+        currentTodos.splice(dragOverItemIndex, 0, reorderedItem);
+
+        onUpdate({ id: item.id, todos: currentTodos });
+
+        dragItem.current = null;
+        dragOverItem.current = null;
+    };
+
 
     const todos = item.todos || [];
     const useScroll = todos.length > MAX_ITEMS_BEFORE_SCROLL;
 
     const renderTodoList = () => (
         todos.map(todo => (
-            <div key={todo.id} className="flex items-center space-x-2 py-1 group" data-no-drag="true">
+            <div 
+                key={todo.id}
+                className="flex items-center space-x-2 py-1 group cursor-grab active:cursor-grabbing" 
+                data-no-drag="true"
+                draggable
+                onDragStart={(e) => handleDragStart(e, todo.id)}
+                onDragEnter={(e) => handleDragEnter(e, todo.id)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => e.preventDefault()}
+            >
                 <Checkbox
                     id={todo.id}
                     checked={todo.completed}
                     onCheckedChange={() => handleToggleTodo(todo.id)}
                     className="data-[state=checked]:bg-primary data-[state=checked]:border-primary-foreground"
                 />
-                <label htmlFor={todo.id} className={cn("flex-grow text-sm", todo.completed && "line-through text-muted-foreground")}>{todo.text}</label>
+                {editingTodoId === todo.id ? (
+                    <Input
+                        type="text"
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        onKeyDown={(e) => handleEditKeyDown(e, todo.id)}
+                        onBlur={() => handleUpdateTodoText(todo.id)}
+                        autoFocus
+                        className="h-7 text-sm"
+                    />
+                ) : (
+                    <label 
+                        htmlFor={todo.id} 
+                        className={cn("flex-grow text-sm", todo.completed && "line-through text-muted-foreground")}
+                        onDoubleClick={() => handleDoubleClick(todo)}
+                    >
+                        {todo.text}
+                    </label>
+                )}
                 <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleDeleteTodo(todo.id)}>
                     <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
@@ -88,7 +174,7 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate }) => {
                     placeholder="Add a new item..."
                     value={newTodoText}
                     onChange={(e) => setNewTodoText(e.target.value)}
-                    onKeyDown={handleKeyDown}
+                    onKeyDown={handleAddKeyDown}
                     className="h-8 text-sm"
                 />
                 <Button size="icon" className="h-8 w-8" onClick={handleAddTodo}>

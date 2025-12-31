@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import TodoItem from '@/components/canvas/todo-item';
+import { Separator } from '@/components/ui/separator';
 
 interface CanvasItemProps {
   item: CanvasItemData;
@@ -171,7 +172,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
       case 'todo':
         return (
           <>
-            <CardHeader>
+            <CardHeader className="py-4">
               <CardTitle
                 ref={cardTitleRef}
                 contentEditable={isEditing}
@@ -191,7 +192,8 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
                 {item.content}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-2 pt-0 h-full">
+            <Separator />
+            <CardContent className="p-2 pt-2 h-full">
               <TodoItem item={item} onUpdate={onUpdate} />
             </CardContent>
           </>
