@@ -15,13 +15,14 @@ interface CanvasItemProps {
   onDoubleClick: () => void;
   onContextMenu: (event: MouseEvent) => void;
   isSelected: boolean;
+  isEditing: boolean;
+  onEditEnd: () => void;
 }
 
-const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoubleClick, onContextMenu, isSelected }) => {
+const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoubleClick, onContextMenu, isSelected, isEditing, onEditEnd }) => {
   const dragStartPos = useRef<Point>({ x: 0, y: 0 });
   const itemStartPos = useRef<Point>({ x: 0, y: 0 });
   const resizeStartSize = useRef({ width: 0, height: 0 });
-  const [isEditing, setIsEditing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cardTitleRef = useRef<HTMLDivElement>(null);
   
@@ -61,13 +62,6 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
     }
   };
 
-  const handleItemDoubleClick = () => {
-    if (item.type === 'text' || item.type === 'board') {
-      setIsEditing(true);
-    }
-    onDoubleClick();
-  };
-
   useEffect(() => {
     if (isEditing) {
       if (item.type === 'text' && textareaRef.current) {
@@ -86,8 +80,8 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
     }
   }, [isEditing, item.type]);
   
-  const handleTextBlur = () => {
-    setIsEditing(false);
+  const handleBlur = () => {
+    onEditEnd();
   };
   
   const handleResizeMouseDown = (e: MouseEvent) => {
@@ -133,7 +127,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
             ref={textareaRef}
             value={item.content}
             onChange={(e) => onUpdate({ id: item.id, content: e.target.value })}
-            onBlur={handleTextBlur}
+            onBlur={handleBlur}
             className="w-full h-full bg-transparent border-0 resize-none focus:ring-0 focus-visible:ring-offset-0 focus-visible:ring-0"
           />
         ) : (
@@ -160,7 +154,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
               className={cn("outline-none rounded-sm px-1", isEditing && "ring-2 ring-primary no-drag")}
               onBlur={(e) => {
                 onUpdate({ id: item.id, content: e.currentTarget.textContent || ''});
-                setIsEditing(false);
+                handleBlur();
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -196,7 +190,7 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
       )}
       onMouseDown={handleMouseDown}
       onClick={onClick}
-      onDoubleClick={(e) => { e.stopPropagation(); if(item.type !== 'board') { handleItemDoubleClick() } else { onDoubleClick() } }}
+      onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick() }}
       onContextMenu={onContextMenu}
     >
       <Card
@@ -218,3 +212,5 @@ const CanvasItem: FC<CanvasItemProps> = ({ item, zoom, onUpdate, onClick, onDoub
 };
 
 export default CanvasItem;
+
+    

@@ -1,7 +1,7 @@
 "use client";
 
 import type { FC } from 'react';
-import { Type, Image, Square, ArrowRight, Trash2, LogIn, MousePointer2 } from 'lucide-react';
+import { Type, Image, Square, ArrowRight, Trash2, LogIn, PenSquare } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -10,7 +10,7 @@ import { CanvasItemType, AnyCanvasItem } from '@/lib/types';
 interface ContextMenuProps {
   x: number;
   y: number;
-  onAction: (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow'> | 'delete' | 'enter') => void;
+  onAction: (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow'> | 'delete' | 'enter' | 'edit') => void;
   isItemMenu: boolean;
   itemType?: AnyCanvasItem['type'];
   accentColor?: string;
@@ -24,6 +24,7 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
     { label: 'Add Arrow', icon: ArrowRight, action: 'arrow' as const },
   ];
   
+  const editItem = { label: 'Edit', icon: PenSquare, action: 'edit' as const };
   const deleteItem = { label: 'Delete', icon: Trash2, action: 'delete' as const };
   const enterBoardItem = { label: 'Enter Board', icon: LogIn, action: 'enter' as const };
 
@@ -51,6 +52,20 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
             {item.label}
           </Button>
         ))}
+
+        {isItemMenu && (itemType === 'text' || itemType === 'board') && (
+            <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={(e) => {
+                e.stopPropagation();
+                onAction(editItem.action);
+                }}
+            >
+                <editItem.icon className="w-4 h-4 mr-2" />
+                {editItem.label}
+            </Button>
+        )}
 
         {isItemMenu && itemType === 'board' && (
             <Button
@@ -90,3 +105,5 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
 };
 
 export default ContextMenu;
+
+    

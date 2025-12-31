@@ -58,6 +58,7 @@ export default function CanvasCraftPage() {
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [selectedArrowIds, setSelectedArrowIds] = useState<string[]>([]);
 
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const isPanning = useRef(false);
   const lastPanPoint = useRef<Point>({ x: 0, y: 0 });
@@ -303,7 +304,7 @@ export default function CanvasCraftPage() {
     setContextMenu({ ...contextMenu, show: false });
   }
 
-  const handleContextMenuAction = (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow'> | 'delete' | 'enter') => {
+  const handleContextMenuAction = (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow'> | 'delete' | 'enter' | 'edit') => {
     const canvasPos = screenToCanvas({ x: contextMenu.x, y: contextMenu.y });
 
     if (action === 'delete' && contextMenu.itemId) {
@@ -315,12 +316,17 @@ export default function CanvasCraftPage() {
         if (item) handleItemDoubleClick(item);
         return;
     }
+    if (action === 'edit' && contextMenu.itemId) {
+        setEditingItemId(contextMenu.itemId);
+        setContextMenu({ ...contextMenu, show: false });
+        return;
+    }
 
     setContextMenu({ ...contextMenu, show: false });
     
     if (action === 'arrow') {
         setArrowDrawingState({ isDrawing: true, startPoint: null });
-    } else if (action !== 'delete' && action !== 'enter') {
+    } else if (action !== 'delete' && action !== 'enter' && action !== 'edit') {
         addItem(action, canvasPos);
     }
   };
@@ -376,6 +382,8 @@ export default function CanvasCraftPage() {
           setHistoryIndex(0);
           setSelectedItemIds([]);
           setSelectedArrowIds([]);
+      } else if (item.type === 'text') {
+        setEditingItemId(item.id);
       }
   };
 
@@ -602,6 +610,8 @@ export default function CanvasCraftPage() {
                       onDoubleClick={() => handleItemDoubleClick(item)}
                       onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({x: e.clientX, y: e.clientY, show: true, itemId: item.id})}}
                       isSelected={selectedItemIds.includes(item.id)}
+                      isEditing={editingItemId === item.id}
+                      onEditEnd={() => setEditingItemId(null)}
                   />
               ))}
           </div>
@@ -636,3 +646,5 @@ export default function CanvasCraftPage() {
     </main>
   );
 }
+
+    
