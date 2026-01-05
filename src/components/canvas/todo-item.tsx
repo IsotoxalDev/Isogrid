@@ -170,7 +170,10 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop }) =>
         <div className="h-full flex flex-col" data-no-drag="true">
             <div className="flex-grow">
                 {useScroll ? (
-                    <ScrollArea className="h-[120px] pr-3">
+                    <ScrollArea 
+                        className="h-[120px] pr-3"
+                        onWheel={(e) => e.stopPropagation()}
+                    >
                         {renderTodoList()}
                     </ScrollArea>
                 ) : (
