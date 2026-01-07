@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRef, type FC, type MouseEvent, useState, useEffect } from 'react';
@@ -64,7 +63,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
 
     const isLeftClick = e.button === 0;
     
-    if (isLeftClick && !(e.ctrlKey || e.metaKey)) { // Left click for dragging
+    if (isLeftClick && !(e.ctrlKey || e.metaKey)) { 
         e.preventDefault();
         itemStartPos.current = item.position;
 
@@ -152,7 +151,6 @@ const CanvasItem: FC<CanvasItemProps> = ({
     }
   }
 
-
   const renderContent = () => {
     switch (item.type) {
       case 'text':
@@ -175,7 +173,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
             width={item.width}
             height={item.height}
             className="object-cover w-full h-full rounded-lg"
-            unoptimized // for blob urls
+            unoptimized
           />
         );
       case 'board':
@@ -263,7 +261,8 @@ const CanvasItem: FC<CanvasItemProps> = ({
         left: item.position.x,
         top: item.position.y,
         width: item.width,
-        height: item.height,
+        /* FIX 1: If it's a Todo list, use auto height. For others, use stored height */
+        height: item.type === 'todo' ? 'auto' : item.height,
         transformOrigin: 'top left',
       }}
       className={cn(
@@ -279,16 +278,21 @@ const CanvasItem: FC<CanvasItemProps> = ({
     >
       <Card
         style={cardStyle}
+        /* FIX 2: Use h-fit for todos, h-full for fixed size items (like text boards or images) */
         className={cn(
-          "w-full h-full overflow-hidden transition-colors duration-200 rounded-lg shadow-md flex flex-col",
+          "w-full overflow-hidden transition-colors duration-200 rounded-lg shadow-md flex flex-col",
+          item.type !== 'todo' && "h-full",
+          item.type === 'todo' && "h-fit",
           item.type === 'image' && 'p-0 border-0',
-          item.type === 'text' && '',
-          item.type === 'board' && 'flex items-center justify-center',
-          item.type === 'todo' && ''
+          item.type === 'board' && 'flex items-center justify-center'
         )}
       >
         {renderContent()}
       </Card>
+      
+      {/* FIX 3: Optional - You might want to hide the resize handle for Todo items 
+          since height is now automatic, but keeping it allows width resizing. 
+          The logic below keeps it visible. */}
       <div 
         className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize no-drag"
         onMouseDown={handleResizeMouseDown}
