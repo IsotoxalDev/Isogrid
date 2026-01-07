@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from 'react';
@@ -15,6 +16,7 @@ interface SettingsPopoverProps {
   onSettingsChange: (settings: Partial<BoardSettings>) => void;
   zoom: number;
   onZoomChange: (newZoom: number) => void;
+  onExport: () => void;
 }
 
 const PRESET_COLORS = [
@@ -28,7 +30,7 @@ const PRESET_COLORS = [
     "326 55% 69%", // #D88CB5
 ];
 
-const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange, zoom, onZoomChange }) => {
+const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange, zoom, onZoomChange, onExport }) => {
   
     const handleColorChange = (newColor: string) => {
         onSettingsChange({ accentColor: newColor });
@@ -176,10 +178,13 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
                     <Button variant="ghost" size="sm" onClick={() => onSettingsChange({ vignetteIntensity: 0.5 })}>Reset</Button>
                 </div>
             </div>
+            <Separator />
+            <div className="grid gap-2">
+                <h4 className="font-medium leading-none">Export</h4>
+                <Button variant="outline" onClick={onExport}>Export to JSON</Button>
+            </div>
         </div>
     );
 };
 
 export default SettingsPopover;
-
-    

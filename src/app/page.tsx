@@ -343,7 +343,7 @@ export default function IsogridPage() {
         ...baseItem,
         type,
         width: 300,
-        height: 250,
+        height: 'auto',
         content: 'New Todo List',
         todos: [],
       };
@@ -624,6 +624,22 @@ export default function IsogridPage() {
     setDropTargetId(null);
   };
 
+  const handleExport = () => {
+    const dataToExport = {
+      items,
+      arrows,
+    };
+    const jsonString = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'isogrid-export.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: 'Exported successfully!' });
+  };
+
   const scaledGridSize = GRID_SIZE * viewState.zoom;
   
   const gridBackgroundImage = gridStyle === 'dots' 
@@ -804,14 +820,15 @@ export default function IsogridPage() {
             </PopoverTrigger>
             <PopoverContent className="w-80">
               <div className="space-y-4">
-                <div className="space-y-4">
-                  <SettingsPopover 
-                    settings={settings} 
-                    onSettingsChange={handleSettingsChange}
-                    zoom={viewState.zoom}
-                    onZoomChange={handleZoom}
-                  />
-                </div>
+                  <div className="space-y-4">
+                    <SettingsPopover 
+                      settings={settings} 
+                      onSettingsChange={handleSettingsChange}
+                      zoom={viewState.zoom}
+                      onZoomChange={handleZoom}
+                      onExport={handleExport}
+                    />
+                  </div>
               </div>
             </PopoverContent>
         </Popover>
@@ -821,5 +838,3 @@ export default function IsogridPage() {
     </main>
   );
 }
-
-    
