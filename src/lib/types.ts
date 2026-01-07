@@ -11,6 +11,11 @@ export type TodoListItem = {
   completed: boolean;
 };
 
+export type TextAlign = 'left' | 'center' | 'right';
+export type FontWeight = 'normal' | 'bold';
+export type FontStyle = 'normal' | 'italic';
+export type TextDecoration = 'none' | 'underline';
+
 export interface CanvasItemData {
   id: string;
   type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo'>;
@@ -20,6 +25,12 @@ export interface CanvasItemData {
   content: string; // For text content, image src, or board/todo title
   parentId: string | null; // null for root board
   todos?: TodoListItem[]; // only for 'todo' type
+  // Text properties
+  textAlign?: TextAlign;
+  fontSize?: number;
+  fontWeight?: FontWeight;
+  fontStyle?: FontStyle;
+  textDecoration?: TextDecoration;
 }
 
 export interface ArrowData {

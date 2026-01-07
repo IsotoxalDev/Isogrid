@@ -154,6 +154,14 @@ const CanvasItem: FC<CanvasItemProps> = ({
   const renderContent = () => {
     switch (item.type) {
       case 'text':
+        const textStyle: React.CSSProperties = {
+            textAlign: item.textAlign || 'left',
+            fontSize: item.fontSize ? `${item.fontSize}px` : '1rem',
+            fontWeight: item.fontWeight || 'normal',
+            fontStyle: item.fontStyle || 'normal',
+            textDecoration: item.textDecoration || 'none',
+        };
+
         return isEditing ? (
           <Textarea
             ref={textareaRef}
@@ -161,9 +169,12 @@ const CanvasItem: FC<CanvasItemProps> = ({
             onChange={(e) => onUpdate({ id: item.id, content: e.target.value })}
             onBlur={handleBlur}
             className="w-full h-full bg-transparent border-0 resize-none focus:ring-0 focus-visible:ring-offset-0 focus-visible:ring-0"
+            style={textStyle}
           />
         ) : (
-          <div className="w-full h-full p-4 whitespace-pre-wrap">{item.content}</div>
+          <div className="w-full h-full p-4 whitespace-pre-wrap" style={textStyle}>
+            {item.content}
+          </div>
         );
       case 'image':
         return (
@@ -178,7 +189,11 @@ const CanvasItem: FC<CanvasItemProps> = ({
         );
       case 'board':
         return (
-          <CardHeader className="w-full text-center">
+          <CardHeader
+            className="w-full h-full flex items-center justify-center text-center cursor-pointer"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <CardTitle
               ref={cardTitleRef}
               contentEditable={isEditing}
@@ -223,7 +238,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
               </CardTitle>
             </CardHeader>
             <Separator />
-            <CardContent className="p-2 pt-2 h-full"
+            <CardContent className="p-2 pt-2 flex-grow"
               onDragOver={(e) => {
                 onDragEnter();
                 e.preventDefault();
@@ -261,7 +276,6 @@ const CanvasItem: FC<CanvasItemProps> = ({
         left: item.position.x,
         top: item.position.y,
         width: item.width,
-        /* FIX 1: If it's a Todo list, use auto height. For others, use stored height */
         height: item.type === 'todo' ? 'auto' : item.height,
         transformOrigin: 'top left',
       }}
@@ -278,21 +292,16 @@ const CanvasItem: FC<CanvasItemProps> = ({
     >
       <Card
         style={cardStyle}
-        /* FIX 2: Use h-fit for todos, h-full for fixed size items (like text boards or images) */
         className={cn(
           "w-full overflow-hidden transition-colors duration-200 rounded-lg shadow-md flex flex-col",
           item.type !== 'todo' && "h-full",
           item.type === 'todo' && "h-fit",
           item.type === 'image' && 'p-0 border-0',
-          item.type === 'board' && 'flex items-center justify-center'
         )}
       >
         {renderContent()}
       </Card>
       
-      {/* FIX 3: Optional - You might want to hide the resize handle for Todo items 
-          since height is now automatic, but keeping it allows width resizing. 
-          The logic below keeps it visible. */}
       <div 
         className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize no-drag"
         onMouseDown={handleResizeMouseDown}

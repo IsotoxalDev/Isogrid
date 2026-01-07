@@ -26,6 +26,7 @@ import SelectionBox from '@/components/canvas/selection-box';
 import InteractiveArrow from '@/components/canvas/interactive-arrow';
 import { Input } from '@/components/ui/input';
 import ItemSettingsPopover from '@/components/canvas/item-settings-popover';
+import FormattingToolbar from '@/components/canvas/formatting-toolbar';
 
 const INITIAL_ITEMS: CanvasItemData[] = [];
 
@@ -354,6 +355,13 @@ export default function IsogridPage() {
         width: type === 'image' || type === 'board' ? 300 : 250,
         height: type === 'image' || type === 'board' ? 200 : 100,
         content: type === 'text' ? 'New Text' : type === 'board' ? 'New Board' : PlaceHolderImages[0].imageUrl,
+        ...(type === 'text' && {
+          textAlign: 'left',
+          fontSize: 16,
+          fontWeight: 'normal',
+          fontStyle: 'normal',
+          textDecoration: 'none',
+        }),
       };
     }
     updateState(prevItems => [...prevItems, newItem], arrows);
@@ -704,6 +712,7 @@ export default function IsogridPage() {
   };
 
   const selectedItems = items.filter(item => selectedItemIds.includes(item.id));
+  const selectedTextItems = selectedItems.filter(item => item.type === 'text');
 
   return (
     <main
@@ -889,7 +898,12 @@ export default function IsogridPage() {
         </Popover>
       </div>
       {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} itemType={allCanvasItems.find(i=>i.id===contextMenu.itemId)?.type} accentColor={accentColor} />}
-      
+      {selectedTextItems.length > 0 && (
+        <FormattingToolbar
+          items={selectedTextItems}
+          onUpdate={handleItemsUpdate}
+        />
+      )}
     </main>
   );
 }
