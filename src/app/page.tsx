@@ -25,7 +25,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import SelectionBox from '@/components/canvas/selection-box';
 import InteractiveArrow from '@/components/canvas/interactive-arrow';
 import { Input } from '@/components/ui/input';
-import ItemSettingsPopover from '@/components/canvas/item-settings-popover';
 import FormattingToolbar from '@/components/canvas/formatting-toolbar';
 import { Separator } from '@/components/ui/separator';
 
@@ -887,10 +886,7 @@ export default function IsogridPage() {
                   <div className="space-y-4">
                   {selectedItemIds.length > 0 && (
                     <div className="space-y-4">
-                        <ItemSettingsPopover 
-                          items={selectedItems}
-                          onSettingsChange={handleItemSettingsChange}
-                        />
+                        {/* This section is now removed */}
                          <Separator />
                     </div>
                   )}
@@ -917,5 +913,3 @@ export default function IsogridPage() {
     </main>
   );
 }
-
-    
