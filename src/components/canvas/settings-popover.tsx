@@ -149,8 +149,8 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
                 <div className="flex items-center gap-2">
                     <Slider
                         id="zoom-slider"
-                        min={0.1}
-                        max={5}
+                        min={0.5}
+                        max={3}
                         step={0.1}
                         value={[zoom]}
                         onValueChange={(value) => onZoomChange(value[0])}
@@ -181,3 +181,5 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
 };
 
 export default SettingsPopover;
+
+    

@@ -154,7 +154,7 @@ export default function IsogridPage() {
   const handleZoom = (newZoom: number) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
-    const clampedZoom = Math.max(0.1, Math.min(5, newZoom));
+    const clampedZoom = Math.max(0.5, Math.min(3, newZoom));
   
     // Zoom towards the center of the canvas viewport
     const viewportCenter = { x: rect.width / 2, y: rect.height / 2 };
@@ -178,7 +178,7 @@ export default function IsogridPage() {
     const rect = canvasRef.current.getBoundingClientRect();
     const zoomFactor = 1.1;
     const newZoom = e.deltaY < 0 ? viewState.zoom * zoomFactor : viewState.zoom / zoomFactor;
-    const clampedZoom = Math.max(0.1, Math.min(5, newZoom));
+    const clampedZoom = Math.max(0.5, Math.min(3, newZoom));
 
     const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     const mouseOnCanvasBeforeZoom = {
@@ -805,12 +805,6 @@ export default function IsogridPage() {
             <PopoverContent className="w-80">
               <div className="space-y-4">
                 <div className="space-y-4">
-                  {selectedItems.length > 0 && (
-                    <div className='space-y-4'>
-                      <ItemSettingsPopover items={selectedItems} onSettingsChange={handleItemSettingsChange} />
-                      <Separator />
-                    </div>
-                  )}
                   <SettingsPopover 
                     settings={settings} 
                     onSettingsChange={handleSettingsChange}
@@ -827,3 +821,5 @@ export default function IsogridPage() {
     </main>
   );
 }
+
+    
