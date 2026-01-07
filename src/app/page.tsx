@@ -27,6 +27,7 @@ import InteractiveArrow from '@/components/canvas/interactive-arrow';
 import { Input } from '@/components/ui/input';
 import ItemSettingsPopover from '@/components/canvas/item-settings-popover';
 import FormattingToolbar from '@/components/canvas/formatting-toolbar';
+import { Separator } from '@/components/ui/separator';
 
 const INITIAL_ITEMS: CanvasItemData[] = [];
 
@@ -916,3 +917,5 @@ export default function IsogridPage() {
     </main>
   );
 }
+
+    

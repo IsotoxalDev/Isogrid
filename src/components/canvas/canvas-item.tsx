@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRef, type FC, type MouseEvent, useState, useEffect } from 'react';
@@ -200,8 +201,8 @@ const CanvasItem: FC<CanvasItemProps> = ({
         );
       case 'board':
         return (
-          <CardHeader
-            className="w-full h-full flex items-center justify-center text-center"
+          <div
+            className="w-full h-full flex items-center justify-center text-center cursor-pointer"
             onClick={(e) => { e.stopPropagation(); onDoubleClick(); }}
           >
             <CardTitle
@@ -225,7 +226,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
             >
               {item.content}
             </CardTitle>
-          </CardHeader>
+          </div>
         );
       case 'link':
         const isValidUrl = item.content.startsWith('http://') || item.content.startsWith('https://');
@@ -242,16 +243,18 @@ const CanvasItem: FC<CanvasItemProps> = ({
                 />
             </div>
         ) : (
-            <a
+            <div className="flex items-center w-full h-full p-3 gap-3">
+              <a
                 href={isValidUrl ? item.content : `//${item.content}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center w-full h-full p-3 gap-3 cursor-pointer group"
+                className="flex items-center gap-3 group cursor-pointer"
                 onClick={(e) => e.stopPropagation()}
-            >
+              >
                 <Link className="w-5 h-5 text-muted-foreground shrink-0"/>
-                <span className="truncate text-sm group-hover:underline text-primary-foreground">{item.content}</span>
-            </a>
+                <span className="truncate text-sm text-primary-foreground group-hover:underline">{item.content}</span>
+              </a>
+            </div>
         );
       case 'todo':
         return (
@@ -334,7 +337,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
         className={cn(
           "w-full overflow-hidden transition-colors duration-200 rounded-lg shadow-md flex flex-col",
           item.type !== 'todo' && "h-full",
-          item.type === 'todo' && "h-fit",
+          item.type === 'todo' && "min-h-[120px]",
           item.type === 'image' && 'p-0 border-0',
         )}
       >
@@ -350,3 +353,5 @@ const CanvasItem: FC<CanvasItemProps> = ({
 };
 
 export default CanvasItem;
+
+    
