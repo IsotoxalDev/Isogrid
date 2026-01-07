@@ -881,15 +881,9 @@ export default function IsogridPage() {
                     <Cog className="w-5 h-5"/>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80">
+            <PopoverContent className="w-80 max-h-[70vh] overflow-y-auto">
               <div className="space-y-4">
                   <div className="space-y-4">
-                  {selectedItemIds.length > 0 && (
-                    <div className="space-y-4">
-                        {/* This section is now removed */}
-                         <Separator />
-                    </div>
-                  )}
                     <SettingsPopover 
                       settings={settings} 
                       onSettingsChange={handleSettingsChange}
