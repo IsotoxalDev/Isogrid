@@ -17,6 +17,7 @@ interface SettingsPopoverProps {
   zoom: number;
   onZoomChange: (newZoom: number) => void;
   onExport: () => void;
+  onImport: () => void;
 }
 
 const PRESET_COLORS = [
@@ -30,7 +31,7 @@ const PRESET_COLORS = [
     "326 55% 69%", // #D88CB5
 ];
 
-const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange, zoom, onZoomChange, onExport }) => {
+const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange, zoom, onZoomChange, onExport, onImport }) => {
   
     const handleColorChange = (newColor: string) => {
         onSettingsChange({ accentColor: newColor });
@@ -180,8 +181,11 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
             </div>
             <Separator />
             <div className="grid gap-2">
-                <h4 className="font-medium leading-none">Export</h4>
-                <Button variant="outline" onClick={onExport}>Export to JSON</Button>
+                <h4 className="font-medium leading-none">Data</h4>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="w-full" onClick={onImport}>Import from JSON</Button>
+                  <Button variant="outline" className="w-full" onClick={onExport}>Export to JSON</Button>
+                </div>
             </div>
         </div>
     );

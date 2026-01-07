@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect, useCallback, type MouseEvent, DragEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, type MouseEvent, DragEvent, ChangeEvent } from 'react';
 import {
   CanvasItemData,
   Point,
@@ -25,7 +25,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import SelectionBox from '@/components/canvas/selection-box';
 import InteractiveArrow from '@/components/canvas/interactive-arrow';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import ItemSettingsPopover from '@/components/canvas/item-settings-popover';
 
 const INITIAL_ITEMS: CanvasItemData[] = [];
@@ -91,6 +90,7 @@ export default function IsogridPage() {
   const isPanning = useRef(false);
   const lastPanPoint = useRef<Point>({ x: 0, y: 0 });
   const rightClickDragInfo = useRef<{ isDragging: boolean; itemId?: string }>({ isDragging: false });
+  const importInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const currentBoard = boardStack[boardStack.length - 1];
@@ -639,6 +639,45 @@ export default function IsogridPage() {
     URL.revokeObjectURL(url);
     toast({ title: 'Exported successfully!' });
   };
+  
+  const handleImportClick = () => {
+    importInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content);
+        if (Array.isArray(data.items) && Array.isArray(data.arrows)) {
+          updateState(data.items, data.arrows);
+          toast({ title: 'Import successful!' });
+          // Reset board stack to root after import
+          setBoardStack([ROOT_BOARD]);
+          setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
+        } else {
+          throw new Error('Invalid file format');
+        }
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Import failed',
+          description: error instanceof Error ? error.message : 'Could not read the file.',
+        });
+      } finally {
+        // Reset the file input value to allow re-importing the same file
+        if (importInputRef.current) {
+          importInputRef.current.value = '';
+        }
+      }
+    };
+    reader.readAsText(file);
+  };
+
 
   const scaledGridSize = GRID_SIZE * viewState.zoom;
   
@@ -677,6 +716,13 @@ export default function IsogridPage() {
         setDropTargetId(null);
       }}
     >
+      <input
+        type="file"
+        ref={importInputRef}
+        className="hidden"
+        accept=".json"
+        onChange={handleFileChange}
+      />
       <div
         ref={canvasRef}
         className="w-full h-full"
@@ -821,12 +867,21 @@ export default function IsogridPage() {
             <PopoverContent className="w-80">
               <div className="space-y-4">
                   <div className="space-y-4">
+                  {selectedItemIds.length > 0 && (
+                    <div className="space-y-4">
+                        <ItemSettingsPopover 
+                          items={selectedItems}
+                          onSettingsChange={handleItemSettingsChange}
+                        />
+                    </div>
+                  )}
                     <SettingsPopover 
                       settings={settings} 
                       onSettingsChange={handleSettingsChange}
                       zoom={viewState.zoom}
                       onZoomChange={handleZoom}
                       onExport={handleExport}
+                      onImport={handleImportClick}
                     />
                   </div>
               </div>
