@@ -151,6 +151,27 @@ export default function IsogridPage() {
     };
   }, [viewState]);
 
+  const handleZoom = (newZoom: number) => {
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const clampedZoom = Math.max(0.1, Math.min(5, newZoom));
+  
+    // Zoom towards the center of the canvas viewport
+    const viewportCenter = { x: rect.width / 2, y: rect.height / 2 };
+  
+    const mouseOnCanvasBeforeZoom = {
+      x: (viewportCenter.x - viewState.pan.x) / viewState.zoom,
+      y: (viewportCenter.y - viewState.pan.y) / viewState.zoom,
+    };
+  
+    const newPan = {
+      x: viewportCenter.x - mouseOnCanvasBeforeZoom.x * clampedZoom,
+      y: viewportCenter.y - mouseOnCanvasBeforeZoom.y * clampedZoom,
+    };
+  
+    setViewState({ zoom: clampedZoom, pan: newPan });
+  };
+  
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     if (!canvasRef.current) return;
@@ -315,8 +336,6 @@ export default function IsogridPage() {
       id: `item-${Date.now()}`,
       position,
       parentId: currentBoardId,
-      opacity: settings.defaultOpacity,
-      backgroundBlur: settings.defaultBackgroundBlur,
     };
 
     if (type === 'todo') {
@@ -491,8 +510,6 @@ export default function IsogridPage() {
                         height: height,
                         content: src,
                         parentId: currentBoardId,
-                        opacity: settings.defaultOpacity,
-                        backgroundBlur: settings.defaultBackgroundBlur,
                     };
                     updateState(prev => [...prev, newItem], arrows);
                     toast({ title: "Image pasted successfully!" });
@@ -503,7 +520,7 @@ export default function IsogridPage() {
             return;
         }
     }
-  }, [screenToCanvas, toast, currentBoardId, arrows, items, settings.defaultOpacity, settings.defaultBackgroundBlur]);
+  }, [screenToCanvas, toast, currentBoardId, arrows, items]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -794,7 +811,12 @@ export default function IsogridPage() {
                       <Separator />
                     </div>
                   )}
-                  <SettingsPopover settings={settings} onSettingsChange={handleSettingsChange} />
+                  <SettingsPopover 
+                    settings={settings} 
+                    onSettingsChange={handleSettingsChange}
+                    zoom={viewState.zoom}
+                    onZoomChange={handleZoom}
+                  />
                 </div>
               </div>
             </PopoverContent>

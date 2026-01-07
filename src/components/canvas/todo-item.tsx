@@ -101,10 +101,13 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop }) =>
                     1. If items <= 4: h-auto (grows pixel by pixel).
                     2. If items > 4: h-[160px] (locks height, enabling ScrollArea).
                 */}
-                <div className={cn(
-                    "w-full transition-all duration-300 ease-in-out",
-                    isOverLimit ? "h-[160px]" : "h-auto"
-                )}>
+                <div 
+                    className={cn(
+                        "w-full transition-all duration-300 ease-in-out",
+                        isOverLimit ? "h-[160px]" : "h-auto"
+                    )}
+                    onWheel={(e) => e.stopPropagation()}
+                >
                     {isOverLimit ? (
                         /* Only use ScrollArea when we have a fixed height */
                         <ScrollArea className="h-full w-full">

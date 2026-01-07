@@ -12,6 +12,8 @@ import { Slider } from '@/components/ui/slider';
 interface SettingsPopoverProps {
   settings: BoardSettings;
   onSettingsChange: (settings: Partial<BoardSettings>) => void;
+  zoom: number;
+  onZoomChange: (newZoom: number) => void;
 }
 
 const PRESET_COLORS = [
@@ -25,7 +27,7 @@ const PRESET_COLORS = [
     "326 55% 69%", // #D88CB5
 ];
 
-const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange }) => {
+const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange, zoom, onZoomChange }) => {
   
     const handleColorChange = (newColor: string) => {
         onSettingsChange({ accentColor: newColor });
@@ -120,6 +122,18 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange 
                 </div>
             </div>
             
+            <div className="grid gap-2">
+                <Label htmlFor="zoom-slider">Zoom</Label>
+                <Slider
+                    id="zoom-slider"
+                    min={0.1}
+                    max={5}
+                    step={0.1}
+                    value={[zoom]}
+                    onValueChange={(value) => onZoomChange(value[0])}
+                />
+            </div>
+
             <div className="grid gap-2">
                 <Label htmlFor="vignette-intensity">Vignette Intensity</Label>
                 <Slider
