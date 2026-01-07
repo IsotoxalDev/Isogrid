@@ -331,7 +331,7 @@ export default function IsogridPage() {
     e.preventDefault();
   };
 
-  const addItem = (type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo'>, position: Point) => {
+  const addItem = (type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo' | 'link'>, position: Point) => {
     let newItem: CanvasItemData;
     const baseItem = {
       id: `item-${Date.now()}`,
@@ -347,6 +347,14 @@ export default function IsogridPage() {
         height: 'auto',
         content: 'New Todo List',
         todos: [],
+      };
+    } else if (type === 'link') {
+      newItem = {
+        ...baseItem,
+        type,
+        width: 300,
+        height: 52,
+        content: 'https://www.google.com',
       };
     } else {
       newItem = {
@@ -376,7 +384,7 @@ export default function IsogridPage() {
     setContextMenu({ ...contextMenu, show: false });
   }
 
-  const handleContextMenuAction = (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow' | 'todo'> | 'delete' | 'enter' | 'edit') => {
+  const handleContextMenuAction = (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow' | 'todo' | 'link'> | 'delete' | 'enter' | 'edit') => {
     const canvasPos = screenToCanvas({ x: contextMenu.x, y: contextMenu.y });
 
     if (action === 'delete' && contextMenu.itemId) {
@@ -464,7 +472,7 @@ export default function IsogridPage() {
           setHistoryIndex(0);
           setSelectedItemIds([]);
           setSelectedArrowIds([]);
-      } else if (item.type === 'text' || item.type === 'todo') {
+      } else if (item.type === 'text' || item.type === 'todo' || item.type === 'link') {
         setEditingItemId(item.id);
       }
   };
@@ -528,7 +536,7 @@ export default function IsogridPage() {
             return;
         }
     }
-  }, [screenToCanvas, toast, currentBoardId, arrows, items]);
+  }, [screenToCanvas, toast, currentBoardId, arrows, items, updateState]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -882,6 +890,7 @@ export default function IsogridPage() {
                           items={selectedItems}
                           onSettingsChange={handleItemSettingsChange}
                         />
+                         <Separator />
                     </div>
                   )}
                     <SettingsPopover 

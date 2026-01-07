@@ -6,6 +6,8 @@ import { CanvasItemData, Point, TodoListItem, BoardSettings } from '@/lib/types'
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Link } from 'lucide-react';
 import TodoItem from '@/components/canvas/todo-item';
 import { Separator } from '@/components/ui/separator';
 
@@ -48,6 +50,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
   const itemStartPos = useRef<Point>({ x: 0, y: 0 });
   const resizeStartSize = useRef({ width: 0, height: 0 });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const cardTitleRef = useRef<HTMLDivElement>(null);
   
   const MIN_SIZE = 40;
@@ -91,6 +94,9 @@ const CanvasItem: FC<CanvasItemProps> = ({
       if (item.type === 'text' && textareaRef.current) {
         textareaRef.current.focus();
         textareaRef.current.select();
+      } else if (item.type === 'link' && inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
       } else if ((item.type === 'board' || item.type === 'todo') && cardTitleRef.current) {
         cardTitleRef.current.focus();
         const range = document.createRange();
@@ -120,9 +126,9 @@ const CanvasItem: FC<CanvasItemProps> = ({
         const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
         
         let newWidth = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
-        let newHeight = Math.max(MIN_SIZE, resizeStartSize.current.height + dy);
+        let newHeight = Math.max(item.type === 'link' ? 52 : MIN_SIZE, resizeStartSize.current.height + dy);
 
-        if (moveEvent.shiftKey) {
+        if (moveEvent.shiftKey && item.type !== 'link') {
           const aspectRatio = resizeStartSize.current.width / resizeStartSize.current.height;
           if (Math.abs(dx) > Math.abs(dy)) {
               newHeight = newWidth / aspectRatio;
@@ -130,8 +136,13 @@ const CanvasItem: FC<CanvasItemProps> = ({
               newWidth = newHeight * aspectRatio;
           }
         }
+        
+        const update: Partial<CanvasItemData> = { id: item.id, width: newWidth };
+        if (item.type !== 'link') {
+            update.height = newHeight;
+        }
 
-        onUpdate({ id: item.id, width: newWidth, height: newHeight });
+        onUpdate(update);
     };
 
     const handleMouseUp = () => {
@@ -190,15 +201,17 @@ const CanvasItem: FC<CanvasItemProps> = ({
       case 'board':
         return (
           <CardHeader
-            className="w-full h-full flex items-center justify-center text-center cursor-pointer"
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
+            className="w-full h-full flex items-center justify-center text-center"
+            onClick={(e) => { e.stopPropagation(); onDoubleClick(); }}
           >
             <CardTitle
               ref={cardTitleRef}
               contentEditable={isEditing}
               suppressContentEditableWarning
               className={cn("outline-none rounded-sm px-1", isEditing && "ring-2 ring-primary no-drag")}
+              onMouseDown={(e) => { if (isEditing) e.stopPropagation();}}
+              onClick={(e) => { if (isEditing) e.stopPropagation();}}
+              onDoubleClick={(e) => { if (isEditing) e.stopPropagation();}}
               onBlur={(e) => {
                 onUpdate({ id: item.id, content: e.currentTarget.textContent || ''});
                 handleBlur();
@@ -213,6 +226,32 @@ const CanvasItem: FC<CanvasItemProps> = ({
               {item.content}
             </CardTitle>
           </CardHeader>
+        );
+      case 'link':
+        const isValidUrl = item.content.startsWith('http://') || item.content.startsWith('https://');
+        return isEditing ? (
+            <div className="flex items-center w-full h-full p-2 gap-2">
+                <Link className="w-5 h-5 text-muted-foreground shrink-0"/>
+                <Input
+                    ref={inputRef}
+                    value={item.content}
+                    onChange={(e) => onUpdate({ id: item.id, content: e.target.value })}
+                    onBlur={handleBlur}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleBlur(); }}
+                    className="w-full h-full bg-transparent border-0 focus:ring-0 focus-visible:ring-offset-0 focus-visible:ring-0 p-0 text-sm"
+                />
+            </div>
+        ) : (
+            <a
+                href={isValidUrl ? item.content : `//${item.content}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center w-full h-full p-3 gap-3 cursor-pointer group"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <Link className="w-5 h-5 text-muted-foreground shrink-0"/>
+                <span className="truncate text-sm group-hover:underline text-primary-foreground">{item.content}</span>
+            </a>
         );
       case 'todo':
         return (

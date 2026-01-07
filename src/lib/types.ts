@@ -3,7 +3,7 @@ export type Point = {
   y: number;
 };
 
-export type CanvasItemType = 'text' | 'image' | 'board' | 'arrow' | 'todo';
+export type CanvasItemType = 'text' | 'image' | 'board' | 'arrow' | 'todo' | 'link';
 
 export type TodoListItem = {
   id: string;
@@ -18,11 +18,11 @@ export type TextDecoration = 'none' | 'underline';
 
 export interface CanvasItemData {
   id: string;
-  type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo'>;
+  type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo' | 'link'>;
   position: Point;
   width: number;
   height: number;
-  content: string; // For text content, image src, or board/todo title
+  content: string; // For text content, image src, board/todo title, or link URL
   parentId: string | null; // null for root board
   todos?: TodoListItem[]; // only for 'todo' type
   // Text properties
