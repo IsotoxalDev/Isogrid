@@ -83,6 +83,8 @@ export default function IsogridPage() {
 
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingBoardId, setEditingBoardId] = useState<string | null>(null);
+  const [activeTextarea, setActiveTextarea] = useState<HTMLTextAreaElement | null>(null);
+
 
   const [draggedTodo, setDraggedTodo] = useState<DraggedTodoInfo | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
@@ -365,6 +367,7 @@ export default function IsogridPage() {
         content: type === 'text' ? 'New Text' : type === 'board' ? 'New Board' : PlaceHolderImages[0].imageUrl,
         ...(type === 'text' && {
           textAlign: 'left',
+          textAligns: ['left'],
           fontSize: 16,
           fontWeight: 'normal',
           fontStyle: 'normal',
@@ -490,11 +493,6 @@ export default function IsogridPage() {
     setSettings(s => ({ ...s, ...newSettings }));
   };
   
-  const handleItemSettingsChange = (itemSettings: Partial<CanvasItemData>) => {
-    const updates = selectedItemIds.map(id => ({ id, ...itemSettings }));
-    handleItemsUpdate(updates);
-  };
-
   const handlePaste = useCallback(async (event: ClipboardEvent) => {
     const pastedItems = event.clipboardData?.items;
     if (!pastedItems) return;
@@ -829,6 +827,7 @@ export default function IsogridPage() {
                       onDragEnter={() => draggedTodo && draggedTodo.sourceListId !== item.id && setDropTargetId(item.id)}
                       onDragLeave={() => setDropTargetId(null)}
                       settings={settings}
+                      onTextareaFocus={setActiveTextarea}
                   />
               ))}
           </div>
@@ -898,10 +897,13 @@ export default function IsogridPage() {
         </Popover>
       </div>
       {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} itemType={allCanvasItems.find(i=>i.id===contextMenu.itemId)?.type} accentColor={accentColor} />}
-      {selectedTextItems.length > 0 && (
+      {(selectedTextItems.length > 0 || activeTextarea) && (
         <FormattingToolbar
           items={selectedTextItems}
           onUpdate={handleItemsUpdate}
+          activeTextarea={activeTextarea}
+          onTextareaUpdate={handleItemUpdate}
+          onBlur={() => setActiveTextarea(null)}
         />
       )}
     </main>

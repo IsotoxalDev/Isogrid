@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useRef, type FC, type MouseEvent, useState, useEffect } from 'react';
+import { useRef, type FC, type MouseEvent, useState, useEffect, ChangeEvent, KeyboardEvent } from 'react';
 import Image from 'next/image';
-import { CanvasItemData, Point, TodoListItem, BoardSettings } from '@/lib/types';
+import { CanvasItemData, Point, TodoListItem, BoardSettings, TextAlign } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +28,7 @@ interface CanvasItemProps {
   onDragEnter: () => void;
   onDragLeave: () => void;
   settings: BoardSettings;
+  onTextareaFocus?: (textarea: HTMLTextAreaElement) => void;
 }
 
 const CanvasItem: FC<CanvasItemProps> = ({ 
@@ -46,6 +47,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
   onDragEnter,
   onDragLeave,
   settings,
+  onTextareaFocus,
 }) => {
   const dragStartPos = useRef<Point>({ x: 0, y: 0 });
   const itemStartPos = useRef<Point>({ x: 0, y: 0 });
@@ -95,6 +97,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
       if (item.type === 'text' && textareaRef.current) {
         textareaRef.current.focus();
         textareaRef.current.select();
+        onTextareaFocus?.(textareaRef.current);
       } else if (item.type === 'link' && inputRef.current) {
         inputRef.current.focus();
         inputRef.current.select();
@@ -109,7 +112,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
         }
       }
     }
-  }, [isEditing, item.type]);
+  }, [isEditing, item.type, onTextareaFocus]);
   
   const handleBlur = () => {
     onEditEnd();
@@ -163,29 +166,70 @@ const CanvasItem: FC<CanvasItemProps> = ({
     }
   }
 
+  const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    const newLines = newText.split('\n');
+    const oldLines = item.content.split('\n');
+    const oldAlignments = item.textAligns || [];
+    
+    let newAlignments: TextAlign[] = [];
+
+    // This logic attempts to preserve alignments when lines are added or removed.
+    if (newLines.length > oldLines.length) { // Line added
+      const cursorLine = newText.substring(0, e.target.selectionStart).split('\n').length - 1;
+      const lastAlignment = oldAlignments[cursorLine-1] || 'left';
+      newAlignments = [
+        ...oldAlignments.slice(0, cursorLine),
+        lastAlignment,
+        ...oldAlignments.slice(cursorLine)
+      ];
+    } else if (newLines.length < oldLines.length) { // Line removed
+        const cursorLine = newText.substring(0, e.target.selectionStart).split('\n').length - 1;
+        newAlignments = [
+            ...oldAlignments.slice(0, cursorLine+1),
+            ...oldAlignments.slice(cursorLine + 2)
+        ];
+    } else { // No change in line count
+        newAlignments = oldAlignments;
+    }
+    
+    onUpdate({ id: item.id, content: newText, textAligns: newAlignments });
+  };
+  
   const renderContent = () => {
     switch (item.type) {
       case 'text':
         const textStyle: React.CSSProperties = {
-            textAlign: item.textAlign || 'left',
             fontSize: item.fontSize ? `${item.fontSize}px` : '1rem',
             fontWeight: item.fontWeight || 'normal',
             fontStyle: item.fontStyle || 'normal',
             textDecoration: item.textDecoration || 'none',
         };
 
-        return isEditing ? (
-          <Textarea
-            ref={textareaRef}
-            value={item.content}
-            onChange={(e) => onUpdate({ id: item.id, content: e.target.value })}
-            onBlur={handleBlur}
-            className="w-full h-full bg-transparent border-0 resize-none focus:ring-0 focus-visible:ring-offset-0 focus-visible:ring-0"
-            style={textStyle}
-          />
-        ) : (
+        if (isEditing) {
+          return (
+            <Textarea
+              ref={textareaRef}
+              value={item.content}
+              onChange={handleTextChange}
+              onFocus={(e) => onTextareaFocus?.(e.target)}
+              onBlur={handleBlur}
+              className="w-full h-full bg-transparent border-0 resize-none focus:ring-0 focus-visible:ring-offset-0 focus-visible:ring-0"
+              style={{ ...textStyle, textAlign: item.textAlign || 'left' }}
+            />
+          );
+        }
+        
+        const lines = item.content.split('\n');
+        const alignments = item.textAligns || [];
+        
+        return (
           <div className="w-full h-full p-4 whitespace-pre-wrap" style={textStyle}>
-            {item.content}
+            {lines.map((line, index) => (
+              <div key={index} style={{ textAlign: alignments[index] || item.textAlign || 'left' }}>
+                {line || ' '}
+              </div>
+            ))}
           </div>
         );
       case 'image':
@@ -252,7 +296,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
                 onClick={(e) => e.stopPropagation()}
               >
                 <Link className="w-5 h-5 text-muted-foreground shrink-0"/>
-                <span className="truncate text-sm text-primary-foreground group-hover:underline">{item.content}</span>
+                <span className="truncate text-sm text-primary group-hover:underline">{item.content}</span>
               </a>
             </div>
         );

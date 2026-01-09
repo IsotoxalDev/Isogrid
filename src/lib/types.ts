@@ -1,3 +1,4 @@
+
 export type Point = {
   x: number;
   y: number;
@@ -21,12 +22,13 @@ export interface CanvasItemData {
   type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo' | 'link'>;
   position: Point;
   width: number;
-  height: number;
+  height: number | 'auto';
   content: string; // For text content, image src, board/todo title, or link URL
   parentId: string | null; // null for root board
   todos?: TodoListItem[]; // only for 'todo' type
   // Text properties
   textAlign?: TextAlign;
+  textAligns?: TextAlign[];
   fontSize?: number;
   fontWeight?: FontWeight;
   fontStyle?: FontStyle;

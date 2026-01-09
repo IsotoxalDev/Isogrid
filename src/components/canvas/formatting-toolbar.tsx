@@ -1,6 +1,7 @@
+
 "use client";
 
-import type { FC } from 'react';
+import { type FC, useState, useEffect, useCallback } from 'react';
 import {
   AlignCenter,
   AlignLeft,
@@ -11,7 +12,7 @@ import {
   Plus,
   Minus,
 } from 'lucide-react';
-import { CanvasItemData } from '@/lib/types';
+import { CanvasItemData, TextAlign } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -19,28 +20,70 @@ import { cn } from '@/lib/utils';
 interface FormattingToolbarProps {
   items: CanvasItemData[];
   onUpdate: (updates: (Partial<CanvasItemData> & { id: string })[]) => void;
+  activeTextarea: HTMLTextAreaElement | null;
+  onTextareaUpdate: (update: Partial<CanvasItemData> & { id: string }) => void;
+  onBlur: () => void;
 }
 
-const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate }) => {
-  if (items.length === 0) return null;
+const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, activeTextarea, onTextareaUpdate, onBlur }) => {
+  const [currentItem, setCurrentItem] = useState<CanvasItemData | null>(null);
+  const [currentLine, setCurrentLine] = useState(0);
+
+  const getSelectionDetails = useCallback(() => {
+    if (!activeTextarea) return { line: 0, item: null };
+    const itemId = activeTextarea.closest('[data-item-id]')?.getAttribute('data-item-id');
+    const item = items.find(i => i.id === itemId) || null;
+    const line = activeTextarea.value.substring(0, activeTextarea.selectionStart).split('\n').length - 1;
+    return { line, item };
+  }, [activeTextarea, items]);
+
+  useEffect(() => {
+    const { line, item } = getSelectionDetails();
+    setCurrentLine(line);
+    setCurrentItem(item);
+
+    const handleSelectionChange = () => {
+      const { line: newLine, item: newItem } = getSelectionDetails();
+      setCurrentLine(newLine);
+      setCurrentItem(newItem);
+    };
+
+    const handleBlur = (e: FocusEvent) => {
+        if (!e.currentTarget || !(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node | null)) {
+            onBlur();
+        }
+    }
+    
+    document.addEventListener('selectionchange', handleSelectionChange);
+    activeTextarea?.addEventListener('blur', handleBlur);
+
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+      activeTextarea?.removeEventListener('blur', handleBlur);
+    };
+  }, [activeTextarea, getSelectionDetails, onBlur]);
+
+  if (items.length === 0 && !activeTextarea) return null;
+  
+  const targetItems = activeTextarea ? (currentItem ? [currentItem] : []) : items;
+  if (targetItems.length === 0) return null;
 
   const getCommonValue = <T,>(prop: keyof CanvasItemData, defaultValue: T): T => {
-    const firstValue = items[0][prop] as T | undefined;
-    if (items.every((item) => (item[prop] as T | undefined ?? defaultValue) === (firstValue ?? defaultValue))) {
+    const firstValue = targetItems[0][prop] as T | undefined;
+    if (targetItems.every((item) => (item[prop] as T | undefined ?? defaultValue) === (firstValue ?? defaultValue))) {
       return firstValue ?? defaultValue;
     }
     return defaultValue; // Return default if values are mixed
   };
   
-  const commonTextAlign = getCommonValue('textAlign', 'left');
   const commonFontSize = getCommonValue('fontSize', 16);
   const commonFontWeight = getCommonValue('fontWeight', 'normal');
   const commonFontStyle = getCommonValue('fontStyle', 'normal');
   const commonTextDecoration = getCommonValue('textDecoration', 'none');
+  const commonTextAlign = currentItem?.textAligns?.[currentLine] || currentItem?.textAlign || 'left';
 
-
-  const handleUpdate = (update: Partial<Omit<CanvasItemData, 'id'>>) => {
-    const updates = items.map((item) => ({ id: item.id, ...update }));
+  const handleUpdate = (update: Partial<Omit<CanvasItemData, 'id' | 'textAligns'>>) => {
+    const updates = targetItems.map((item) => ({ id: item.id, ...update }));
     onUpdate(updates);
   };
   
@@ -54,13 +97,31 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate }) => {
     handleUpdate({ fontSize: newSize });
   }
 
+  const handleTextAlignChange = (newAlign: TextAlign) => {
+    if (activeTextarea && currentItem) {
+        const newAlignments = [...(currentItem.textAligns || [])];
+        newAlignments[currentLine] = newAlign;
+        onTextareaUpdate({ id: currentItem.id, textAligns: newAlignments });
+    } else {
+        const updates = targetItems.map((item) => {
+            const numLines = item.content.split('\n').length;
+            return {
+                id: item.id,
+                textAligns: Array(numLines).fill(newAlign),
+            }
+        });
+        onUpdate(updates as any);
+    }
+  };
+
+
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
       <div className="flex items-center gap-1 p-1 rounded-lg bg-background/80 backdrop-blur-sm border shadow-lg">
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => handleUpdate({ textAlign: 'left' })}
+          onClick={() => handleTextAlignChange('left')}
           className={cn(commonTextAlign === 'left' && 'bg-accent')}
         >
           <AlignLeft className="w-4 h-4" />
@@ -68,7 +129,7 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate }) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => handleUpdate({ textAlign: 'center' })}
+          onClick={() => handleTextAlignChange('center')}
           className={cn(commonTextAlign === 'center' && 'bg-accent')}
         >
           <AlignCenter className="w-4 h-4" />
@@ -76,7 +137,7 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate }) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => handleUpdate({ textAlign: 'right' })}
+          onClick={() => handleTextAlignChange('right')}
           className={cn(commonTextAlign === 'right' && 'bg-accent')}
         >
           <AlignRight className="w-4 h-4" />
