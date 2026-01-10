@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import { LogOut } from 'lucide-react';
 
 
 interface SettingsPopoverProps {
@@ -18,6 +19,7 @@ interface SettingsPopoverProps {
   onZoomChange: (newZoom: number) => void;
   onExport: () => void;
   onImport: () => void;
+  onSignOut: () => void;
 }
 
 const PRESET_COLORS = [
@@ -31,7 +33,7 @@ const PRESET_COLORS = [
     "326 55% 69%", // #D88CB5
 ];
 
-const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange, zoom, onZoomChange, onExport, onImport }) => {
+const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange, zoom, onZoomChange, onExport, onImport, onSignOut }) => {
   
     const handleColorChange = (newColor: string) => {
         onSettingsChange({ accentColor: newColor });
@@ -187,6 +189,11 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
                   <Button variant="outline" className="w-full" onClick={onExport}>Export to JSON</Button>
                 </div>
             </div>
+            <Separator />
+            <Button variant="ghost" className="w-full justify-start" onClick={onSignOut}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+            </Button>
         </div>
     );
 };

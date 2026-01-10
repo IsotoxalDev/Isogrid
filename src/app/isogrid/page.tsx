@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, type MouseEvent, DragEvent, ChangeEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   CanvasItemData,
   Point,
@@ -27,6 +28,8 @@ import InteractiveArrow from '@/components/canvas/interactive-arrow';
 import { Input } from '@/components/ui/input';
 import FormattingToolbar from '@/components/canvas/formatting-toolbar';
 import { Separator } from '@/components/ui/separator';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
 
 const INITIAL_ITEMS: CanvasItemData[] = [];
 
@@ -95,6 +98,7 @@ export default function IsogridPage() {
   const rightClickDragInfo = useRef<{ isDragging: boolean; itemId?: string }>({ isDragging: false });
   const importInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
   const currentBoard = boardStack[boardStack.length - 1];
   const currentBoardId = currentBoard.id === 'root' ? null : currentBoard.id;
@@ -692,6 +696,19 @@ export default function IsogridPage() {
     reader.readAsText(file);
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Sign-out failed',
+        description: error.message,
+      });
+    }
+  };
+
 
   const scaledGridSize = GRID_SIZE * viewState.zoom;
   
@@ -890,6 +907,7 @@ export default function IsogridPage() {
                       onZoomChange={handleZoom}
                       onExport={handleExport}
                       onImport={handleImportClick}
+                      onSignOut={handleSignOut}
                     />
                   </div>
               </div>
