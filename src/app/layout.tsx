@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   title: 'Isogrid',
-  description: 'Your infinite digital workspace for creative collaboration.',
+  description: 'An infinite digital workspace.',
 };
 
 export default function RootLayout({
