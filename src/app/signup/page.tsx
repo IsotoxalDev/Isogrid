@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 
 export default function SignupPage() {
   const [firstName, setFirstName] = useState("");
@@ -47,7 +48,7 @@ export default function SignupPage() {
       toast({
         variant: "destructive",
         title: "Sign-up failed",
-        description: error.message,
+        description: getAuthErrorMessage(error.code),
       });
     }
   };

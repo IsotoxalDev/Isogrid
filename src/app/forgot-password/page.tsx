@@ -15,6 +15,7 @@ import Link from "next/link";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -32,7 +33,7 @@ export default function ForgotPasswordPage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: getAuthErrorMessage(error.code),
       });
     }
   };
