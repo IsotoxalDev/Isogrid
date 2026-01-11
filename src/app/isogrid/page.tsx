@@ -120,10 +120,10 @@ export default function IsogridPage() {
         }
         setHistory([{ items: savedData?.items || [], arrows: savedData?.arrows || []}]);
         setHistoryIndex(0);
+        setIsLoading(false);
       } else {
         router.push('/');
       }
-      setIsLoading(false);
     });
     return () => unsubscribe();
   }, [router]);
@@ -770,7 +770,7 @@ export default function IsogridPage() {
   const selectedItems = items.filter(item => selectedItemIds.includes(item.id));
   const selectedTextItems = selectedItems.filter(item => item.type === 'text');
 
-  if (isLoading) {
+  if (isLoading || !currentUser) {
     return (
         <main className="w-screen h-screen flex items-center justify-center bg-background">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
