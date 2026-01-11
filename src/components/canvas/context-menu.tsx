@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { FC } from 'react';
@@ -34,9 +33,15 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
   const getDeleteColor = () => {
     if (!accentColor) return 'hsl(var(--destructive))';
     const [h, s, l] = accentColor.split(' ').map(parseFloat);
-    // shift hue towards red and increase saturation for vibrancy
     return `hsl(${(h - 30 + 360) % 360}, ${Math.min(100, s + 20)}%, ${l}%)`;
   };
+
+  // Logic to determine if any "top section" actions are present
+  const showEditOption = itemType === 'text' || itemType === 'board' || itemType === 'todo' || itemType === 'link';
+  const showEnterOption = itemType === 'board';
+
+  // Show separator if ANY of the top options are visible
+  const showSeparator = showEditOption || showEnterOption;
 
   return (
     <div style={{ top: y, left: x, position: 'fixed' }} className="z-50">
@@ -56,7 +61,7 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
           </Button>
         ))}
 
-        {isItemMenu && (itemType === 'text' || itemType === 'board' || itemType === 'todo' || itemType === 'link') && (
+        {isItemMenu && showEditOption && (
             <Button
                 variant="ghost"
                 className="w-full justify-start"
@@ -70,7 +75,7 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
             </Button>
         )}
 
-        {isItemMenu && itemType === 'board' && (
+        {isItemMenu && showEnterOption && (
             <Button
                 variant="ghost"
                 className="w-full justify-start"
@@ -83,11 +88,11 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
                 {enterBoardItem.label}
             </Button>
         )}
-
         
         {isItemMenu && (
             <>
-            <Separator className="my-1" />
+            {showSeparator && <Separator className="my-1" />}
+            
             <Button
                 variant="ghost"
                 className="w-full justify-start"

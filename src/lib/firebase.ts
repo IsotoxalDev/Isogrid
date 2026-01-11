@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { CanvasItemData, ArrowData, BoardSettings } from "./types";
 
 const firebaseConfig = {
@@ -17,6 +18,7 @@ const firebaseConfig = {
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
+let storage: FirebaseStorage;
 
 if (!getApps().length) {
     app = initializeApp(firebaseConfig);
@@ -26,6 +28,7 @@ if (!getApps().length) {
 
 auth = getAuth(app);
 db = getFirestore(app);
+storage = getStorage(app);
 
 export type CanvasData = {
     items: CanvasItemData[];
@@ -62,5 +65,4 @@ export const loadCanvasData = async (userId: string): Promise<CanvasData | null>
     }
 };
 
-
-export { app, auth, db };
+export { app, auth, db, storage };

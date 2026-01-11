@@ -38,6 +38,7 @@
     "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^11.9.1",
+    "firebase-tools": "^15.2.1",
     "lucide-react": "^0.475.0",
     "nanoid": "^5.0.7",
     "next": "15.5.9",

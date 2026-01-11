@@ -1,16 +1,19 @@
-
 "use client";
 
-import { useRef, type FC, type MouseEvent, useState, useEffect, ChangeEvent, KeyboardEvent } from 'react';
-import Image from 'next/image';
+import { useRef, type FC, type MouseEvent, useState, useEffect, ChangeEvent } from 'react';
 import { CanvasItemData, Point, TodoListItem, BoardSettings, TextAlign } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Link } from 'lucide-react';
+import { Link, ArrowUp, Loader2 } from 'lucide-react'; // Changed Upload to ArrowUp
 import TodoItem from '@/components/canvas/todo-item';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button'; 
+
+// --- Firebase Imports ---
+import { storage } from '@/lib/firebase'; 
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface CanvasItemProps {
   item: CanvasItemData;
@@ -52,9 +55,14 @@ const CanvasItem: FC<CanvasItemProps> = ({
   const dragStartPos = useRef<Point>({ x: 0, y: 0 });
   const itemStartPos = useRef<Point>({ x: 0, y: 0 });
   const resizeStartSize = useRef({ width: 0, height: 0 });
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const cardTitleRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Loading state for upload
+  const [isUploading, setIsUploading] = useState(false);
   
   const MIN_SIZE = 40;
 
@@ -66,7 +74,6 @@ const CanvasItem: FC<CanvasItemProps> = ({
     e.stopPropagation();
     
     dragStartPos.current = { x: e.clientX, y: e.clientY };
-
     const isLeftClick = e.button === 0;
     
     if (isLeftClick && !(e.ctrlKey || e.metaKey)) { 
@@ -157,6 +164,71 @@ const CanvasItem: FC<CanvasItemProps> = ({
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
   }
+
+  // --- Image Handling & Firebase Upload ---
+
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Set loading state immediately
+    setIsUploading(true);
+
+    try {
+        // 1. Get image dimensions for aspect ratio
+        const localUrl = URL.createObjectURL(file);
+        const img = new window.Image();
+        
+        let newHeight = item.height;
+        
+        // Wrap image loading in a promise to ensure we have dimensions
+        await new Promise<void>((resolve) => {
+            img.onload = () => {
+                const naturalWidth = img.width;
+                const naturalHeight = img.height;
+                const aspectRatio = naturalWidth / naturalHeight;
+                newHeight = item.width / aspectRatio;
+                // Clean up the blob URL since we don't need it anymore
+                URL.revokeObjectURL(localUrl);
+                resolve();
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(localUrl);
+                resolve();
+            };
+            img.src = localUrl;
+        });
+
+        // 2. Upload to Firebase
+        const storageRef = ref(storage, `canvas-images/${item.id}/${Date.now()}_${file.name}`);
+        
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        
+        // 3. Update with real Firebase URL (This persists the data)
+        // Important: We call onUpdate once with the cloud URL only
+        onUpdate({ 
+            id: item.id, 
+            content: downloadURL,
+            width: item.width,
+            height: newHeight
+        });
+        
+    } catch (error) {
+        console.error("Firebase upload failed:", error);
+        alert("Failed to upload image. Please check your connection or permissions.");
+    } finally {
+        setIsUploading(false);
+        // Reset file input
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const triggerImageUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  // ----------------------------
   
   const cardStyle: React.CSSProperties = {};
   if (item.type !== 'image') {
@@ -174,8 +246,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
     
     let newAlignments: TextAlign[] = [];
 
-    // This logic attempts to preserve alignments when lines are added or removed.
-    if (newLines.length > oldLines.length) { // Line added
+    if (newLines.length > oldLines.length) { 
       const cursorLine = newText.substring(0, e.target.selectionStart).split('\n').length - 1;
       const lastAlignment = oldAlignments[cursorLine-1] || 'left';
       newAlignments = [
@@ -183,13 +254,13 @@ const CanvasItem: FC<CanvasItemProps> = ({
         lastAlignment,
         ...oldAlignments.slice(cursorLine)
       ];
-    } else if (newLines.length < oldLines.length) { // Line removed
+    } else if (newLines.length < oldLines.length) { 
         const cursorLine = newText.substring(0, e.target.selectionStart).split('\n').length - 1;
         newAlignments = [
             ...oldAlignments.slice(0, cursorLine+1),
             ...oldAlignments.slice(cursorLine + 2)
         ];
-    } else { // No change in line count
+    } else { 
         newAlignments = oldAlignments;
     }
     
@@ -234,14 +305,46 @@ const CanvasItem: FC<CanvasItemProps> = ({
         );
       case 'image':
         return (
-          <Image
-            src={item.content}
-            alt="User uploaded content"
-            width={item.width}
-            height={item.height}
-            className="object-cover w-full h-full rounded-lg"
-            unoptimized
-          />
+          <div 
+            className="relative w-full h-full group" 
+            onDoubleClick={(e) => {
+                e.stopPropagation();
+                triggerImageUpload();
+            }}
+          >
+             {/* Loading Overlay */}
+             {isUploading && (
+               <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20 rounded-lg transition-all backdrop-blur-[2px]">
+                  <Loader2 className="w-10 h-10 text-white animate-spin" />
+               </div>
+             )}
+
+             <img
+                src={item.content || '/placeholder.png'} 
+                alt="Canvas Content"
+                className="w-full h-full object-cover rounded-lg pointer-events-none select-none"
+                draggable={false}
+                style={{ width: '100%', height: '100%' }}
+            />
+            
+            {/* Visual Button to Edit Image - UPDATED STYLE */}
+            <div className={cn(
+                "absolute top-2 right-2 opacity-0 transition-opacity duration-200 no-drag z-10",
+                (isSelected || "group-hover:opacity-100")
+            )}>
+                <Button 
+                    size="icon" 
+                    disabled={isUploading}
+                    className="h-8 w-8 shadow-md bg-black hover:bg-black/80 text-white border border-white/20"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        triggerImageUpload();
+                    }}
+                >
+                    <ArrowUp className="w-4 h-4" />
+                </Button>
+            </div>
+          </div>
         );
       case 'board':
         return (
@@ -389,6 +492,14 @@ const CanvasItem: FC<CanvasItemProps> = ({
       <div 
         className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize no-drag"
         onMouseDown={handleResizeMouseDown}
+      />
+      
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImageUpload}
+        accept="image/*"
+        className="hidden"
       />
     </div>
   );
