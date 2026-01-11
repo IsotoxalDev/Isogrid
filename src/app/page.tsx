@@ -28,8 +28,16 @@ export default function LoginPage() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push("/isogrid");
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      if (userCredential.user.emailVerified) {
+        router.push("/isogrid");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Email not verified",
+          description: "Please check your inbox and verify your email to log in.",
+        });
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
