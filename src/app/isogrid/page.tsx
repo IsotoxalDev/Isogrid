@@ -433,7 +433,16 @@ export default function IsogridPage() {
     }
     if (action === 'enter' && contextMenu.itemId) {
         const item = items.find(i => i.id === contextMenu.itemId);
-        if (item) handleItemDoubleClick(item);
+        if (item && item.type === 'board') {
+            const newBoard: Board = { id: item.id, name: item.content };
+            setBoardStack(stack => [...stack, newBoard]);
+            setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
+            setHistory([{ items, arrows }]);
+            setHistoryIndex(0);
+            setSelectedItemIds([]);
+            setSelectedArrowIds([]);
+        }
+        setContextMenu({ ...contextMenu, show: false });
         return;
     }
     if (action === 'edit' && contextMenu.itemId) {
@@ -504,15 +513,7 @@ export default function IsogridPage() {
   };
   
   const handleItemDoubleClick = (item: CanvasItemData) => {
-      if (item.type === 'board') {
-          const newBoard: Board = {id: item.id, name: item.content};
-          setBoardStack(stack => [...stack, newBoard]);
-          setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
-          setHistory([{ items, arrows }]);
-          setHistoryIndex(0);
-          setSelectedItemIds([]);
-          setSelectedArrowIds([]);
-      } else if (item.type === 'text' || item.type === 'todo' || item.type === 'link') {
+      if (item.type === 'board' || item.type === 'text' || item.type === 'todo' || item.type === 'link') {
         setEditingItemId(item.id);
       }
   };
