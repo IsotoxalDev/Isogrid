@@ -254,7 +254,6 @@ const CanvasItem: FC<CanvasItemProps> = ({
               suppressContentEditableWarning
               className={cn("outline-none rounded-sm px-1", isEditing && "ring-2 ring-primary no-drag")}
               onMouseDown={(e) => { if (isEditing) e.stopPropagation();}}
-              onClick={(e) => { if (isEditing) e.stopPropagation();}}
               onDoubleClick={(e) => { if (isEditing) e.stopPropagation();}}
               onBlur={(e) => {
                 onUpdate({ id: item.id, content: e.currentTarget.textContent || ''});
@@ -343,7 +342,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
                 item={item} 
                 onUpdate={onUpdate}
                 onDragStart={onTodoDragStart}
-                onDrop={onDrop}
+                onDrop={onTodoDrop}
               />
             </CardContent>
           </>
@@ -396,5 +395,3 @@ const CanvasItem: FC<CanvasItemProps> = ({
 };
 
 export default CanvasItem;
-
-    

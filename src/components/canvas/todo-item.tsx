@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, type FC, useRef, useEffect } from 'react';
@@ -14,7 +15,7 @@ interface TodoItemProps {
     item: CanvasItemData;
     onUpdate: (item: Partial<CanvasItemData> & { id: string }) => void;
     onDragStart: (sourceListId: string, todo: TodoListItem) => void;
-    onDrop: (targetListId: string, targetTodoId: string) => void;
+    onDrop: (targetListId: string, targetTodoId?: string) => void;
 }
 
 const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop }) => {
