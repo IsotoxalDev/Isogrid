@@ -52,6 +52,7 @@ const GRID_SIZE = 40;
 type HistoryState = {
   items: CanvasItemData[];
   arrows: ArrowData[];
+  settings: BoardSettings;
 };
 
 type ArrowDrawingState = {
@@ -117,13 +118,14 @@ export default function IsogridPage() {
         if (savedData) {
           setItems(savedData.items || []);
           setArrows(savedData.arrows || []);
+          setSettings(savedData.settings || INITIAL_SETTINGS);
         }
-        setHistory([{ items: savedData?.items || [], arrows: savedData?.arrows || []}]);
+        setHistory([{ items: savedData?.items || [], arrows: savedData?.arrows || [], settings: savedData?.settings || INITIAL_SETTINGS }]);
         setHistoryIndex(0);
-        setIsLoading(false);
       } else {
         router.push('/');
       }
+      setIsLoading(false);
     });
     return () => unsubscribe();
   }, [router]);
@@ -138,17 +140,22 @@ export default function IsogridPage() {
   
   useDebouncedEffect(() => {
       if (currentUser && !isLoading) {
-          saveCanvasData(currentUser.uid, { items, arrows });
+          saveCanvasData(currentUser.uid, { items, arrows, settings });
       }
-  }, [items, arrows, currentUser, isLoading], 1000);
+  }, [items, arrows, settings, currentUser, isLoading], 1000);
   
   // --- END Data Persistence ---
   
-  const updateState = (newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]), newArrows: ArrowData[] | ((prev: ArrowData[]) => ArrowData[])) => {
+  const updateState = (
+    newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]), 
+    newArrows: ArrowData[] | ((prev: ArrowData[]) => ArrowData[]),
+    newSettings?: BoardSettings | ((prev: BoardSettings) => BoardSettings),
+  ) => {
     const updatedItems = typeof newItems === 'function' ? newItems(items) : newItems;
     const updatedArrows = typeof newArrows === 'function' ? newArrows(arrows) : newArrows;
+    const updatedSettings = newSettings ? (typeof newSettings === 'function' ? newSettings(settings) : newSettings) : settings;
 
-    const newHistoryEntry = { items: updatedItems, arrows: updatedArrows };
+    const newHistoryEntry = { items: updatedItems, arrows: updatedArrows, settings: updatedSettings };
     const newHistory = [...history.slice(0, historyIndex + 1), newHistoryEntry];
     
     setHistory(newHistory);
@@ -156,6 +163,7 @@ export default function IsogridPage() {
     
     setItems(updatedItems);
     setArrows(updatedArrows);
+    setSettings(updatedSettings);
   };
   
   const undo = useCallback(() => {
@@ -165,6 +173,7 @@ export default function IsogridPage() {
       const previousState = history[newIndex];
       setItems(previousState.items);
       setArrows(previousState.arrows);
+      setSettings(previousState.settings);
     }
   }, [history, historyIndex]);
 
@@ -175,6 +184,7 @@ export default function IsogridPage() {
       const nextState = history[newIndex];
       setItems(nextState.items);
       setArrows(nextState.arrows);
+      setSettings(nextState.settings);
     }
   }, [history, historyIndex]);
 
@@ -437,7 +447,7 @@ export default function IsogridPage() {
             const newBoard: Board = { id: item.id, name: item.content };
             setBoardStack(stack => [...stack, newBoard]);
             setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
-            setHistory([{ items, arrows }]);
+            setHistory([{ items, arrows, settings }]);
             setHistoryIndex(0);
             setSelectedItemIds([]);
             setSelectedArrowIds([]);
@@ -517,7 +527,7 @@ export default function IsogridPage() {
       const newBoard: Board = { id: item.id, name: item.content };
       setBoardStack(stack => [...stack, newBoard]);
       setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
-      setHistory([{ items, arrows }]);
+      setHistory([{ items, arrows, settings }]);
       setHistoryIndex(0);
       setSelectedItemIds([]);
       setSelectedArrowIds([]);
@@ -529,14 +539,14 @@ export default function IsogridPage() {
   const navigateToBoard = (boardIndex: number) => {
       setBoardStack(stack => stack.slice(0, boardIndex + 1));
       setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
-      setHistory([{ items, arrows }]);
+      setHistory([{ items, arrows, settings }]);
       setHistoryIndex(0);
       setSelectedItemIds([]);
       setSelectedArrowIds([]);
   };
 
   const handleSettingsChange = (newSettings: Partial<BoardSettings>) => {
-    setSettings(s => ({ ...s, ...newSettings }));
+    updateState(items, arrows, prevSettings => ({ ...prevSettings, ...newSettings }));
   };
   
   const handlePaste = useCallback(async (event: ClipboardEvent) => {
@@ -688,6 +698,7 @@ export default function IsogridPage() {
     const dataToExport = {
       items,
       arrows,
+      settings,
     };
     const jsonString = JSON.stringify(dataToExport, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
@@ -714,7 +725,8 @@ export default function IsogridPage() {
         const content = e.target?.result as string;
         const data = JSON.parse(content);
         if (Array.isArray(data.items) && Array.isArray(data.arrows)) {
-          updateState(data.items, data.arrows);
+          const newSettings = data.settings || INITIAL_SETTINGS;
+          updateState(data.items, data.arrows, newSettings);
           toast({ title: 'Import successful!' });
           // Reset board stack to root after import
           setBoardStack([ROOT_BOARD]);

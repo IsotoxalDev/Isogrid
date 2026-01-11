@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
-import { CanvasItemData, ArrowData } from "./types";
+import { CanvasItemData, ArrowData, BoardSettings } from "./types";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -30,6 +30,7 @@ db = getFirestore(app);
 export type CanvasData = {
     items: CanvasItemData[];
     arrows: ArrowData[];
+    settings: BoardSettings;
 };
 
 export const saveCanvasData = async (userId: string, data: CanvasData) => {
