@@ -832,7 +832,7 @@ export default function IsogridPage() {
           {showGrid && (
               <div
                   data-is-canvas-backdrop="true"
-                  className="absolute inset-0 w-full h-full"
+                  className="fixed inset-0 w-full h-full pointer-events-none"
                   style={gridStyleProps}
               />
           )}
