@@ -246,8 +246,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
       case 'board':
         return (
           <div
-            className="w-full h-full flex items-center justify-center text-center cursor-pointer"
-            onClick={(e) => { e.stopPropagation(); onDoubleClick(); }}
+            className="w-full h-full flex items-center justify-center text-center"
           >
             <CardTitle
               ref={cardTitleRef}
@@ -344,7 +343,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
                 item={item} 
                 onUpdate={onUpdate}
                 onDragStart={onTodoDragStart}
-                onDrop={onTodoDrop}
+                onDrop={onDrop}
               />
             </CardContent>
           </>
