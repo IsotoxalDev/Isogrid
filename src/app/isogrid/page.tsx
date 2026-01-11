@@ -20,16 +20,16 @@ import CanvasItem from '@/components/canvas/canvas-item';
 import ContextMenu from '@/components/canvas/context-menu';
 import SettingsPopover from '@/components/canvas/settings-popover';
 import { useToast } from '@/hooks/use-toast';
-import { ChevronRight, Home, Cog } from 'lucide-react';
+import { ChevronRight, Home, Cog, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import SelectionBox from '@/components/canvas/selection-box';
 import InteractiveArrow from '@/components/canvas/interactive-arrow';
 import { Input } from '@/components/ui/input';
 import FormattingToolbar from '@/components/canvas/formatting-toolbar';
-import { Separator } from '@/components/ui/separator';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
+import { auth, saveCanvasData, loadCanvasData } from '@/lib/firebase';
+import { signOut, onAuthStateChanged, type User } from 'firebase/auth';
+import { nanoid } from 'nanoid';
 
 const INITIAL_ITEMS: CanvasItemData[] = [];
 
@@ -92,6 +92,9 @@ export default function IsogridPage() {
   const [draggedTodo, setDraggedTodo] = useState<DraggedTodoInfo | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const isPanning = useRef(false);
   const lastPanPoint = useRef<Point>({ x: 0, y: 0 });
@@ -105,6 +108,42 @@ export default function IsogridPage() {
   
   const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteIntensity = 0.5 } = settings;
 
+  // --- Data Persistence ---
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setCurrentUser(user);
+        const savedData = await loadCanvasData(user.uid);
+        if (savedData) {
+          setItems(savedData.items || []);
+          setArrows(savedData.arrows || []);
+        }
+        setHistory([{ items: savedData?.items || [], arrows: savedData?.arrows || []}]);
+        setHistoryIndex(0);
+      } else {
+        router.push('/');
+      }
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  const useDebouncedEffect = (effect: () => void, deps: any[], delay: number) => {
+    useEffect(() => {
+        const handler = setTimeout(() => effect(), delay);
+        return () => clearTimeout(handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [...(deps || []), delay]);
+  };
+  
+  useDebouncedEffect(() => {
+      if (currentUser && !isLoading) {
+          saveCanvasData(currentUser.uid, { items, arrows });
+      }
+  }, [items, arrows, currentUser, isLoading], 1000);
+  
+  // --- END Data Persistence ---
+  
   const updateState = (newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]), newArrows: ArrowData[] | ((prev: ArrowData[]) => ArrowData[])) => {
     const updatedItems = typeof newItems === 'function' ? newItems(items) : newItems;
     const updatedArrows = typeof newArrows === 'function' ? newArrows(arrows) : newArrows;
@@ -138,12 +177,6 @@ export default function IsogridPage() {
       setArrows(nextState.arrows);
     }
   }, [history, historyIndex]);
-
-  useEffect(() => {
-    setHistory([{ items, arrows }]);
-    setHistoryIndex(0);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const filteredItems = items.filter(item => item.parentId === currentBoardId);
   const filteredArrows = arrows.filter(arrow => arrow.parentId === currentBoardId);
@@ -220,7 +253,7 @@ export default function IsogridPage() {
             setPreviewArrow({ id: 'preview-arrow', type: 'arrow', start: canvasPos, end: canvasPos, parentId: currentBoardId });
         } else {
             const newArrow: ArrowData = {
-                id: `arrow-${Date.now()}`,
+                id: nanoid(),
                 type: 'arrow',
                 start: arrowDrawingState.startPoint,
                 end: canvasPos,
@@ -290,7 +323,7 @@ export default function IsogridPage() {
         };
 
         const newlySelectedItems = filteredItems.filter(item => {
-            const itemRect = { x: item.position.x, y: item.position.y, width: item.width, height: item.height };
+            const itemRect = { x: item.position.x, y: item.position.y, width: item.width, height: 'auto' === item.height ? 100 : item.height };
             return (
                 itemRect.x < selectionRect.x + selectionRect.width &&
                 itemRect.x + itemRect.width > selectionRect.x &&
@@ -340,7 +373,7 @@ export default function IsogridPage() {
   const addItem = (type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo' | 'link'>, position: Point) => {
     let newItem: CanvasItemData;
     const baseItem = {
-      id: `item-${Date.now()}`,
+      id: nanoid(),
       position,
       parentId: currentBoardId,
     };
@@ -521,7 +554,7 @@ export default function IsogridPage() {
                     const canvasCenter = screenToCanvas({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
                     
                     const newItem: CanvasItemData = {
-                        id: `item-${Date.now()}`,
+                        id: nanoid(),
                         type: 'image',
                         position: {x: canvasCenter.x - width/2, y: canvasCenter.y - height/2},
                         width: width,
@@ -736,6 +769,14 @@ export default function IsogridPage() {
 
   const selectedItems = items.filter(item => selectedItemIds.includes(item.id));
   const selectedTextItems = selectedItems.filter(item => item.type === 'text');
+
+  if (isLoading) {
+    return (
+        <main className="w-screen h-screen flex items-center justify-center bg-background">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </main>
+    );
+  }
 
   return (
     <main

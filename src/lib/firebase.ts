@@ -1,5 +1,7 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
+import { CanvasItemData, ArrowData } from "./types";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,7 +14,52 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
-export { app, auth };
+if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+} else {
+    app = getApp();
+}
+
+auth = getAuth(app);
+db = getFirestore(app);
+
+export type CanvasData = {
+    items: CanvasItemData[];
+    arrows: ArrowData[];
+};
+
+export const saveCanvasData = async (userId: string, data: CanvasData) => {
+    try {
+        const userDocRef = doc(db, 'users', userId);
+        await setDoc(userDocRef, { data }, { merge: true });
+    } catch (error) {
+        console.error("Error saving canvas data:", error);
+        throw error;
+    }
+};
+
+export const loadCanvasData = async (userId: string): Promise<CanvasData | null> => {
+    try {
+        const userDocRef = doc(db, 'users', userId);
+        const docSnap = await getDoc(userDocRef);
+
+        if (docSnap.exists()) {
+            const userData = docSnap.data();
+            // Assuming data is stored under a 'data' field.
+            return userData.data as CanvasData;
+        } else {
+            console.log("No such document!");
+            return null;
+        }
+    } catch (error) {
+        console.error("Error loading canvas data:", error);
+        throw error;
+    }
+};
+
+
+export { app, auth, db };

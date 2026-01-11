@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { nanoid } from 'nanoid';
 
 interface TodoItemProps {
     item: CanvasItemData;
@@ -34,7 +35,7 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop }) =>
     const handleAddTodo = () => {
         if (!newTodoText.trim()) return;
         const newTodo: TodoListItem = {
-            id: `todo-${Date.now()}`,
+            id: nanoid(),
             text: newTodoText,
             completed: false,
         };
