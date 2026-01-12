@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./docs/icon.svg" alt="Isogrid Icon" width="80" height="80" />
+  <img src="./public/icon.svg" alt="Isogrid Icon" width="80" height="80" />
 
 # Isogrid
 
