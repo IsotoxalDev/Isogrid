@@ -8,9 +8,9 @@
   [![Firebase](https://img.shields.io/badge/Firebase-Realtime-orange)](https://firebase.google.com/)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue)](https://www.typescriptlang.org/)
 
-  An infinite digital workspace for creative  and visual thinking.
+  An infinite digital workspace for creative and visual thinking.
 
-  Isogrid is a powerful, open-source canvas application designed to help teams and individuals organize ideas, create mood boards, and visualize complex information in an infinite, zoomable workspace.
+  Isogrid is a powerful, open-source canvas application designed to help you organize ideas, create mood boards, and visualize complex information in an infinite, zoomable workspace.
 </div>
 
 ## ✨ Features

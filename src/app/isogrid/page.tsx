@@ -112,7 +112,7 @@ export default function IsogridPage() {
   // --- Data Persistence ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
+      if (user && user.emailVerified) {
         setCurrentUser(user);
         const savedData = await loadCanvasData(user.uid);
         if (savedData) {
@@ -123,7 +123,7 @@ export default function IsogridPage() {
         setHistory([{ items: savedData?.items || [], arrows: savedData?.arrows || [], settings: savedData?.settings || INITIAL_SETTINGS }]);
         setHistoryIndex(0);
       } else {
-        router.push('/');
+        router.push('/login');
       }
       setIsLoading(false);
     });
@@ -801,7 +801,7 @@ export default function IsogridPage() {
 
   return (
     <main
-      className="w-screen h-screen overflow-hidden bg-background relative"
+      className="w-screen h-screen overflow-hidden bg-background relative flex flex-col"
       onDragOver={(e) => {
         if (draggedTodo) e.preventDefault();
       }}
@@ -819,7 +819,7 @@ export default function IsogridPage() {
       />
       <div
         ref={canvasRef}
-        className="w-full h-full"
+        className="w-full flex-1"
         style={{ cursor: getCursor() }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
@@ -917,6 +917,16 @@ export default function IsogridPage() {
         style={{ boxShadow: `inset 0 0 10vw 5vw hsl(0 0% 0% / ${vignetteIntensity})`}}
       />
       {selectionBox && selectionBox.visible && <SelectionBox start={selectionBox.start} end={selectionBox.end} />}
+      
+      {/* User Greeting */}
+      <div className="absolute top-8 left-8 z-10 text-white font-bold text-3xl">
+        {currentUser?.displayName 
+          ? `Hi ${currentUser.displayName.split(' ')[0]}` 
+          : `Welcome ${currentUser?.email?.split('@')[0]}`
+        }
+      </div>
+      
+      {/* Top Right Navbar */}
       <div className="absolute top-4 right-4 z-10 p-1 rounded-lg bg-background/80 backdrop-blur-sm flex items-center gap-1">
         <div className="flex items-center text-sm text-foreground px-2">
             {boardStack.map((board, index) => (
@@ -975,7 +985,7 @@ export default function IsogridPage() {
               </div>
             </PopoverContent>
         </Popover>
-      </div>
+        </div>
       {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} itemType={allCanvasItems.find(i=>i.id===contextMenu.itemId)?.type} accentColor={accentColor} />}
       {(selectedTextItems.length > 0 || activeTextarea) && (
         <FormattingToolbar
