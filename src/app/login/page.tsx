@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -84,9 +85,13 @@ export default function LoginPage() {
       <div className="w-full max-w-md px-4 animate-in fade-in duration-500">
         <div className="mb-6 text-center">
           <Link href="/" className="inline-flex items-center gap-2 group mb-8">
-            <div className="w-8 h-8 bg-[#c5d86d] rounded-lg flex items-center justify-center">
-              <Grid3x3 className="w-5 h-5 text-[#151515]" />
-            </div>
+            <Image 
+              src="/icon.svg" 
+              alt="Isogrid" 
+              width={32} 
+              height={32}
+              className="group-hover:opacity-80 transition-opacity"
+            />
             <span className="text-xl font-bold text-white group-hover:text-[#c5d86d] transition-colors">
               Isogrid
             </span>
