@@ -7,7 +7,7 @@ import Image from "next/image";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Zap, Share2, Shield, Infinity } from "lucide-react";
+import { ChevronRight, Zap, Share2, Shield, Infinity, Github } from "lucide-react";
 
 const GRID_SIZE = 40;
 
@@ -273,24 +273,78 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Support Section */}
+      <section className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-32 bg-transparent">
+        <div className="max-w-4xl mx-auto text-center space-y-8">
+          <h2 className="text-4xl sm:text-5xl font-bold text-white">
+            Support Isogrid
+          </h2>
+          <p className="text-lg sm:text-xl text-gray-300 mx-auto leading-relaxed">
+            Isogrid is a passion project. If you enjoy using it and wish to support its continued development, please consider making a donation or buying me a coffee. Contributions to the code are also welcome!
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
+            <Link href="https://pages.razorpay.com/isogrid" target="_blank" rel="noopener noreferrer">
+              <Button
+                size="lg"
+                className="bg-[#c5d86d] text-[#151515] hover:bg-[#c5d86d]/90 font-semibold text-base px-8"
+                asChild
+              >
+                <span>
+                  Donate via Razorpay
+                  <ChevronRight className="w-5 h-5 ml-2" />
+                </span>
+              </Button>
+            </Link>
+            <Link href="https://ko-fi.com/isotoxaldev0" target="_blank" rel="noopener noreferrer">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-[#c5d86d]/30 text-[#c5d86d] hover:bg-[#c5d86d]/10 font-semibold text-base px-8"
+                asChild
+              >
+                <span>
+                  Buy me a Ko-fi
+                  <ChevronRight className="w-5 h-5 ml-2" />
+                </span>
+              </Button>
+            </Link>
+            <Link href="https://github.com/IsotoxalDev/Isogrid" target="_blank" rel="noopener noreferrer">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-gray-500/30 text-gray-400 hover:bg-gray-500/10 font-semibold text-base px-8"
+                asChild
+              >
+                <span>
+                  <Github className="w-5 h-5 mr-2" />
+                  View Source
+                </span>
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="relative z-10 border-t border-[#c5d86d]/10 mt-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <Image 
-                src="/icon.svg" 
-                alt="Isogrid" 
-                width={32} 
-                height={32}
-              />
-              <span className="text-white font-semibold">Isogrid</span>
-            </div>
-            <p className="text-gray-400 text-sm">
-              © 2026 Isogrid. An infinite digital workspace.
-            </p>
-          </div>
-        </div>
+                                          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                                            <div className="flex items-center gap-2">
+                                              <Image 
+                                                src="/icon.svg" 
+                                                alt="Isogrid" 
+                                                width={32} 
+                                                height={32}
+                                              />
+                                              <span className="text-white font-semibold">Isogrid</span>
+                                            </div>
+                                            <Link href="https://github.com/IsotoxalDev/Isogrid" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-gray-400 hover:text-[#c5d86d] transition-colors">
+                                              <Github className="w-4 h-4" />
+                                              GitHub
+                                            </Link>
+                                                        <p className="text-gray-400 text-sm">
+                                                          © 2026 Isogrid.
+                                                        </p>                                          </div>        </div>
       </footer>
     </main>
   );

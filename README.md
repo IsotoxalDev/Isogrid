@@ -4,7 +4,6 @@
 # Isogrid
 
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Next.js](https://img.shields.io/badge/Next.js-13+-black)](https://nextjs.org/)
   [![Firebase](https://img.shields.io/badge/Firebase-Realtime-orange)](https://firebase.google.com/)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue)](https://www.typescriptlang.org/)
 
@@ -33,6 +32,13 @@
 - **Real-time Sync** - Firebase-backed automatic saving
 - **User Authentication** - Email-based access with verification
 - **Import/Export** - Download and restore canvas data as JSON
+
+## ❤️ Support Isogrid
+
+Isogrid is a passion project built and maintained for free. If you find it useful, please consider supporting its development!
+
+[![Donate with Razorpay](https://img.shields.io/badge/Donate-Razorpay-blue.svg?style=for-the-badge)](https://pages.razorpay.com/isogrid)
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Ko--fi-red.svg?style=for-the-badge)](https://ko-fi.com/isotoxaldev0)
 
 ## 🚀 Quick Start - Self Hosting
 
