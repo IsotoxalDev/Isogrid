@@ -121,39 +121,40 @@ const CanvasItem: FC<CanvasItemProps> = ({
     }
   }, [isEditing, item.type, onTextareaFocus]);
   
-  const handleBlur = () => {
-    onEditEnd();
-  };
-  
-  const handleResizeMouseDown = (e: MouseEvent) => {
+  const handleResizeMouseDown = (e: MouseEvent, direction: string) => {
     e.stopPropagation();
     e.preventDefault();
     
     dragStartPos.current = { x: e.clientX, y: e.clientY };
     resizeStartSize.current = { width: item.width, height: item.height };
+    itemStartPos.current = item.position;
     
     const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
         const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
         const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
         
-        let newWidth = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
-        let newHeight = Math.max(item.type === 'link' ? 52 : MIN_SIZE, resizeStartSize.current.height + dy);
+        const newUpdate: Partial<CanvasItemData> = {};
 
-        if (moveEvent.shiftKey && item.type !== 'link') {
-          const aspectRatio = resizeStartSize.current.width / resizeStartSize.current.height;
-          if (Math.abs(dx) > Math.abs(dy)) {
-              newHeight = newWidth / aspectRatio;
-          } else {
-              newWidth = newHeight * aspectRatio;
-          }
+        if (direction.includes('e')) {
+            newUpdate.width = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
         }
-        
-        const update: Partial<CanvasItemData> = { id: item.id, width: newWidth };
-        if (item.type !== 'link') {
-            update.height = newHeight;
+        if (direction.includes('w')) {
+            newUpdate.width = Math.max(MIN_SIZE, resizeStartSize.current.width - dx);
+            newUpdate.position = { ...item.position, x: itemStartPos.current.x + dx };
+        }
+        if (direction.includes('s')) {
+            if (item.type !== 'link') {
+                newUpdate.height = Math.max(MIN_SIZE, resizeStartSize.current.height + dy);
+            }
+        }
+        if (direction.includes('n')) {
+            if (item.type !== 'link') {
+                newUpdate.height = Math.max(MIN_SIZE, resizeStartSize.current.height - dy);
+                newUpdate.position = { ...(newUpdate.position || item.position), y: itemStartPos.current.y + dy };
+            }
         }
 
-        onUpdate(update);
+        onUpdate({ id: item.id, ...newUpdate });
     };
 
     const handleMouseUp = () => {
@@ -490,10 +491,18 @@ const CanvasItem: FC<CanvasItemProps> = ({
         {renderContent()}
       </Card>
       
-      <div 
-        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize no-drag"
-        onMouseDown={handleResizeMouseDown}
-      />
+      {isSelected && (
+        <>
+          <div onMouseDown={(e) => handleResizeMouseDown(e, 'n')} className="absolute -top-1 left-1/2 -translate-x-1/2 h-2 w-full cursor-n-resize no-drag" />
+          <div onMouseDown={(e) => handleResizeMouseDown(e, 's')} className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-2 w-full cursor-s-resize no-drag" />
+          <div onMouseDown={(e) => handleResizeMouseDown(e, 'w')} className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-full cursor-w-resize no-drag" />
+          <div onMouseDown={(e) => handleResizeMouseDown(e, 'e')} className="absolute -right-1 top-1/2 -translate-y-1/2 w-2 h-full cursor-e-resize no-drag" />
+          <div onMouseDown={(e) => handleResizeMouseDown(e, 'nw')} className="absolute -top-1 -left-1 w-4 h-4 cursor-nw-resize no-drag rounded-full border-2 border-primary bg-background" />
+          <div onMouseDown={(e) => handleResizeMouseDown(e, 'ne')} className="absolute -top-1 -right-1 w-4 h-4 cursor-ne-resize no-drag rounded-full border-2 border-primary bg-background" />
+          <div onMouseDown={(e) => handleResizeMouseDown(e, 'sw')} className="absolute -bottom-1 -left-1 w-4 h-4 cursor-sw-resize no-drag rounded-full border-2 border-primary bg-background" />
+          <div onMouseDown={(e) => handleResizeMouseDown(e, 'se')} className="absolute -bottom-1 -right-1 w-4 h-4 cursor-se-resize no-drag rounded-full border-2 border-primary bg-background" />
+        </>
+      )}
       
       <input
         type="file"
