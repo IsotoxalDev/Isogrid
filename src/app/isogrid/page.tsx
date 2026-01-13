@@ -363,20 +363,21 @@ export default function IsogridPage() {
     isPanning.current = false;
     e.currentTarget.style.cursor = 'grab';
     
-
+    if (e.button === 2 && !rightClickDragInfo.current.isDragging) {
+        if (arrowDrawingState.isDrawing) {
+            setArrowDrawingState({ isDrawing: false, startPoint: null });
+            setPreviewArrow(null);
+        } else {
+            const clickedItem = (e.target as HTMLElement).closest('[data-item-id], [data-arrow-id]');
+            const itemId = clickedItem ? (clickedItem.getAttribute('data-item-id') || clickedItem.getAttribute('data-arrow-id')) : undefined;
+            setContextMenu({ x: e.clientX, y: e.clientY, show: true, itemId: itemId || undefined });
+        }
+    }
+    rightClickDragInfo.current = { isDragging: false };
   };
   
   const handleContextMenu = (e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (arrowDrawingState.isDrawing) {
-        setArrowDrawingState({ isDrawing: false, startPoint: null });
-        setPreviewArrow(null);
-    } else {
-        const clickedItem = (e.target as HTMLElement).closest('[data-item-id], [data-arrow-id]');
-        const itemId = clickedItem ? (clickedItem.getAttribute('data-item-id') || clickedItem.getAttribute('data-arrow-id')) : undefined;
-        setContextMenu({ x: e.clientX, y: e.clientY, show: true, itemId: itemId || undefined });
-    }
-    rightClickDragInfo.current = { isDragging: false };
   };
 
   const addItem = (type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo' | 'link'>, position: Point) => {
@@ -968,7 +969,7 @@ export default function IsogridPage() {
                     <Cog className="w-5 h-5"/>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 max-h-[70vh] overflow-y-auto">
+            <PopoverContent className="min-w-[20rem] max-w-md max-h-[70vh] overflow-y-auto" style={{ width: 'auto' }}>
               <div className="space-y-4">
                   <div className="space-y-4">
                     <SettingsPopover 
