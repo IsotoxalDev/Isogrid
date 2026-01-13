@@ -27,7 +27,6 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
     const initialArrowPos = { start: { ...latestProps.current.arrow.start }, end: { ...latestProps.current.arrow.end } };
 
     const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
-      console.log('Mouse is moving in handleMouseMove');
 
       const { zoom: currentZoom, onUpdate: currentOnUpdate, arrow: currentArrow } = latestProps.current;
 

@@ -56,7 +56,7 @@ export const loadCanvasData = async (userId: string): Promise<CanvasData | null>
             // Assuming data is stored under a 'data' field.
             return userData.data as CanvasData;
         } else {
-            console.log("No such document!");
+
             return null;
         }
     } catch (error) {
