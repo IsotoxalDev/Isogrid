@@ -40,6 +40,8 @@ Isogrid is a passion project built and maintained for free. If you find it usefu
 [![Donate with Razorpay](https://img.shields.io/badge/Donate-Razorpay-blue.svg?style=for-the-badge)](https://pages.razorpay.com/isogrid)
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Ko--fi-red.svg?style=for-the-badge)](https://ko-fi.com/isotoxaldev0)
 
+Note: Both Razorpay and Ko-fi allow you to contribute amounts of your choice.
+
 ## 🚀 Quick Start - Self Hosting
 
 ### Prerequisites

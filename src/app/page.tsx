@@ -280,7 +280,7 @@ export default function HomePage() {
             Support Isogrid
           </h2>
           <p className="text-lg sm:text-xl text-gray-300 mx-auto leading-relaxed">
-            Isogrid is a passion project. If you enjoy using it and wish to support its continued development, please consider making a donation or buying me a coffee. Contributions to the code are also welcome!
+            Isogrid is an open-source project, making it free to use. If you enjoy it and wish to support its continued development, please consider making a donation or buying me a coffee. Contributions to the code are also welcome!
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
             <Link href="https://pages.razorpay.com/isogrid" target="_blank" rel="noopener noreferrer">
@@ -299,7 +299,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-[#c5d86d]/30 text-[#c5d86d] hover:bg-[#c5d86d]/10 font-semibold text-base px-8"
+                className="border-[#c5d86d]/30 text-[#c1d86d] hover:bg-[#c5d86d]/10 font-semibold text-base px-8"
                 asChild
               >
                 <span>
@@ -322,6 +322,9 @@ export default function HomePage() {
               </Button>
             </Link>
           </div>
+          <p className="text-sm text-gray-500 mt-4">
+            Note: Both Razorpay and Ko-fi allow you to contribute amounts of your choice.
+          </p>
         </div>
       </section>
 
