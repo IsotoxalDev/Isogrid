@@ -73,7 +73,7 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop, sett
                     <Checkbox
                         checked={todo.completed}
                         onCheckedChange={() => handleToggle(todo.id)}
-                        className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary w-4 h-4 rounded-sm"
+                        className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary w-4 h-4 rounded-sm focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
                     <span className={cn(
                         "flex-grow text-sm text-foreground truncate select-none cursor-default",
