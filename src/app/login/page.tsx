@@ -159,9 +159,7 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-gray-500 text-xs mt-6">
-          By signing in, you agree to our Terms of Service and Privacy Policy
-        </p>
+
       </div>
     </main>
   );

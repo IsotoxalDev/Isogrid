@@ -187,9 +187,7 @@ export default function SignupPage() {
             </CardContent>
           </Card>
 
-          <p className="text-center text-gray-500 text-xs mt-6">
-            By creating an account, you agree to our Terms of Service and Privacy Policy
-          </p>
+
         </div>
       </main>
 
