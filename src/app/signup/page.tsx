@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword, sendEmailVerification, onAuthStateChanged } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
@@ -58,6 +58,9 @@ export default function SignupPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       if (userCredential.user) {
+        await updateProfile(userCredential.user, {
+          displayName: `${firstName} ${lastName}`
+        });
         await sendEmailVerification(userCredential.user);
         setShowVerificationDialog(true);
       }
