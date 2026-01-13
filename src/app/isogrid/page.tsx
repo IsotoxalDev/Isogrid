@@ -838,6 +838,7 @@ export default function IsogridPage() {
           )}
 
           <div 
+            data-is-canvas-backdrop="true"
             className="w-full h-full relative"
             style={{ transform: `translate(${viewState.pan.x}px, ${viewState.pan.y}px) scale(${viewState.zoom})`, transformOrigin: '0 0' }}
           >
