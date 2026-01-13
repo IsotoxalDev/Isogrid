@@ -14,9 +14,10 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import { signInWithEmailAndPassword, onAuthStateChanged, sendEmailVerification } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { Grid3x3, Loader2 } from "lucide-react";
 
@@ -51,6 +52,25 @@ export default function LoginPage() {
           variant: "destructive",
           title: "Email not verified",
           description: "Please check your inbox and verify your email to log in.",
+          action: (
+            <ToastAction altText="Resend" onClick={async () => {
+              try {
+                await sendEmailVerification(userCredential.user);
+                toast({
+                  title: "Verification email sent",
+                  description: "A new verification email has been sent to your inbox.",
+                });
+              } catch (error) {
+                toast({
+                  variant: "destructive",
+                  title: "Error sending email",
+                  description: "There was an error sending the verification email. Please try again later.",
+                });
+              }
+            }}>
+              Resend
+            </ToastAction>
+          ),
         });
       }
     } catch (error: any) {
