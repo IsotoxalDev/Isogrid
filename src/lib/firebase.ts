@@ -3,6 +3,7 @@ import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { CanvasItemData, ArrowData, BoardSettings } from "./types";
+import { encrypt, decrypt } from "./encryption";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -38,8 +39,34 @@ export type CanvasData = {
 
 export const saveCanvasData = async (userId: string, data: CanvasData) => {
     try {
+        // Create a deep enough copy to avoid mutating the original state
+        // and to preserve undefined properties.
+        const dataToSave: CanvasData = {
+            settings: { ...data.settings },
+            arrows: data.arrows.map(arrow => ({ ...arrow })),
+            items: data.items.map(item => {
+                const newItem = { ...item };
+                if (newItem.todos) {
+                    newItem.todos = newItem.todos.map(todo => ({ ...todo }));
+                }
+                return newItem;
+            }),
+        };
+
+        // Encrypt sensitive fields
+        dataToSave.items.forEach((item: CanvasItemData) => {
+            if (item.content && ['text', 'board', 'todo', 'link'].includes(item.type)) {
+                item.content = encrypt(item.content);
+            }
+            if (item.type === 'todo' && item.todos) {
+                item.todos.forEach(todo => {
+                    todo.text = encrypt(todo.text);
+                });
+            }
+        });
+
         const userDocRef = doc(db, 'users', userId);
-        await setDoc(userDocRef, { data }, { merge: true });
+        await setDoc(userDocRef, { data: dataToSave }, { merge: true });
     } catch (error) {
         console.error("Error saving canvas data:", error);
         throw error;
@@ -53,10 +80,24 @@ export const loadCanvasData = async (userId: string): Promise<CanvasData | null>
 
         if (docSnap.exists()) {
             const userData = docSnap.data();
-            // Assuming data is stored under a 'data' field.
-            return userData.data as CanvasData;
+            const loadedData = userData.data as CanvasData;
+            
+            // Decrypt sensitive fields
+            if (loadedData && loadedData.items) {
+                loadedData.items.forEach((item: CanvasItemData) => {
+                    if (item.content && ['text', 'board', 'todo', 'link'].includes(item.type)) {
+                        item.content = decrypt(item.content);
+                    }
+                    if (item.type === 'todo' && item.todos) {
+                        item.todos.forEach(todo => {
+                            todo.text = decrypt(todo.text);
+                        });
+                    }
+                });
+            }
+            
+            return loadedData;
         } else {
-
             return null;
         }
     } catch (error) {

@@ -121,6 +121,7 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
         <Button
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => handleTextAlignChange('left')}
           className={cn(commonTextAlign === 'left' && 'bg-accent')}
         >
@@ -129,6 +130,7 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
         <Button
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => handleTextAlignChange('center')}
           className={cn(commonTextAlign === 'center' && 'bg-accent')}
         >
@@ -137,6 +139,7 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
         <Button
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => handleTextAlignChange('right')}
           className={cn(commonTextAlign === 'right' && 'bg-accent')}
         >
@@ -148,6 +151,7 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
         <Button
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => handleToggle('fontWeight', 'bold', 'normal')}
           className={cn(commonFontWeight === 'bold' && 'bg-accent')}
         >
@@ -156,6 +160,7 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
         <Button
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => handleToggle('fontStyle', 'italic', 'normal')}
           className={cn(commonFontStyle === 'italic' && 'bg-accent')}
         >
@@ -164,6 +169,7 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
         <Button
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => handleToggle('textDecoration', 'underline', 'none')}
           className={cn(commonTextDecoration === 'underline' && 'bg-accent')}
         >
@@ -173,11 +179,11 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
         <Separator orientation="vertical" className="h-6 mx-1" />
 
         <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleFontSizeChange(-1)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => e.preventDefault()} onClick={() => handleFontSizeChange(-1)}>
                 <Minus className="w-4 h-4" />
             </Button>
             <span className="text-sm font-medium w-8 text-center">{commonFontSize}</span>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleFontSizeChange(1)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => e.preventDefault()} onClick={() => handleFontSizeChange(1)}>
                 <Plus className="w-4 h-4" />
             </Button>
         </div>

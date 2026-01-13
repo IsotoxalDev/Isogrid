@@ -121,6 +121,10 @@ const CanvasItem: FC<CanvasItemProps> = ({
     }
   }, [isEditing, item.type, onTextareaFocus]);
   
+  const handleBlur = () => {
+    onEditEnd();
+  };
+  
   const handleResizeMouseDown = (e: MouseEvent, direction: string) => {
     e.stopPropagation();
     e.preventDefault();
