@@ -962,7 +962,7 @@ export default function IsogridPage() {
                     ) : (
                         <Button
                             variant="link"
-                            className="p-0 h-auto text-sm"
+                            className="p-0 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
                             onClick={() => navigateToBoard(index)}
                             onDoubleClick={() => {
                                 if (board.id !== 'root') {
