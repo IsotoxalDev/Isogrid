@@ -78,6 +78,7 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID="your_project_id"
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="your_project.firebasestorage.app"
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="your_sender_id"
 NEXT_PUBLIC_FIREBASE_APP_ID="your_app_id"
+NEXT_PUBLIC_ENCRYPTION_KEY="your_encryption_key"
 ```
 
 Find these values in Firebase Console → Project Settings → General tab.
