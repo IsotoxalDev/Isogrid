@@ -222,27 +222,41 @@ export default function IsogridPage() {
     setViewState({ zoom: clampedZoom, pan: newPan });
   };
   
-  const handleWheel = (e: React.WheelEvent) => {
+  const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     if (!canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const zoomFactor = 1.1;
-    const newZoom = e.deltaY < 0 ? viewState.zoom * zoomFactor : viewState.zoom / zoomFactor;
-    const clampedZoom = Math.max(0.5, Math.min(3, newZoom));
-
-    const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    const mouseOnCanvasBeforeZoom = {
-        x: (mousePos.x - viewState.pan.x) / viewState.zoom,
-        y: (mousePos.y - viewState.pan.y) / viewState.zoom
-    };
     
-    const newPan = {
-      x: mousePos.x - mouseOnCanvasBeforeZoom.x * clampedZoom,
-      y: mousePos.y - mouseOnCanvasBeforeZoom.y * clampedZoom
-    };
+    setViewState(currentViewState => {
+        const rect = canvasRef.current!.getBoundingClientRect();
+        const zoomFactor = 1.1;
+        const newZoom = e.deltaY < 0 ? currentViewState.zoom * zoomFactor : currentViewState.zoom / zoomFactor;
+        const clampedZoom = Math.max(0.5, Math.min(3, newZoom));
 
-    setViewState({ zoom: clampedZoom, pan: newPan });
-  };
+        const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        const mouseOnCanvasBeforeZoom = {
+            x: (mousePos.x - currentViewState.pan.x) / currentViewState.zoom,
+            y: (mousePos.y - currentViewState.pan.y) / currentViewState.zoom
+        };
+        
+        const newPan = {
+          x: mousePos.x - mouseOnCanvasBeforeZoom.x * clampedZoom,
+          y: mousePos.y - mouseOnCanvasBeforeZoom.y * clampedZoom
+        };
+
+        return { zoom: clampedZoom, pan: newPan };
+    });
+  }, []); // No dependencies needed
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      canvas.removeEventListener('wheel', handleWheel);
+    };
+  }, [handleWheel]);
   
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
@@ -821,7 +835,6 @@ export default function IsogridPage() {
         ref={canvasRef}
         className="w-full flex-1"
         style={{ cursor: getCursor() }}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
