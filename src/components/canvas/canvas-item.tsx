@@ -446,6 +446,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
                 onUpdate={onUpdate}
                 onDragStart={onTodoDragStart}
                 onDrop={onTodoDrop}
+                settings={settings}
               />
             </CardContent>
           </>
@@ -469,7 +470,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
       className={cn(
         'cursor-grab active:cursor-grabbing transition-shadow duration-200 rounded-lg',
         isSelected && !isDropTarget && 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl',
-        isDropTarget && 'ring-2 ring-green-500 ring-offset-2 ring-offset-background shadow-2xl',
+        isDropTarget && 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl',
         !isSelected && 'hover:shadow-xl'
       )}
       onMouseDown={handleMouseDown}
