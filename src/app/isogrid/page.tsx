@@ -377,21 +377,23 @@ export default function IsogridPage() {
     isPanning.current = false;
     e.currentTarget.style.cursor = 'grab';
     
-    if (e.button === 2 && !rightClickDragInfo.current.isDragging) {
-        if (arrowDrawingState.isDrawing) {
-            setArrowDrawingState({ isDrawing: false, startPoint: null });
-            setPreviewArrow(null);
-        } else {
-            const clickedItem = (e.target as HTMLElement).closest('[data-item-id], [data-arrow-id]');
-            const itemId = clickedItem ? (clickedItem.getAttribute('data-item-id') || clickedItem.getAttribute('data-arrow-id')) : undefined;
-            setContextMenu({ x: e.clientX, y: e.clientY, show: true, itemId: itemId || undefined });
-        }
-    }
     rightClickDragInfo.current = { isDragging: false };
   };
   
   const handleContextMenu = (e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    if (arrowDrawingState.isDrawing) {
+        setArrowDrawingState({ isDrawing: false, startPoint: null });
+        setPreviewArrow(null);
+    } else {
+        const clickedItem = (e.target as HTMLElement).closest('[data-item-id], [data-arrow-id]');
+        const itemId = clickedItem ? (clickedItem.getAttribute('data-item-id') || clickedItem.getAttribute('data-arrow-id')) : undefined;
+        
+        setContextMenu({ x: e.clientX, y: e.clientY, show: true, itemId: itemId || undefined });
+    }
+    rightClickDragInfo.current = { isDragging: false };
   };
 
   const addItem = (type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo' | 'link'>, position: Point) => {
