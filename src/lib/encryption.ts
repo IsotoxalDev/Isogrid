@@ -1,11 +1,11 @@
 import CryptoJS from 'crypto-js';
 
-const secretKey = process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
+const secretKey = process.env.ENCRYPTION_KEY;
 
 if (!secretKey) {
   // In a real app, you might want to handle this more gracefully,
   // but for development, throwing an error is clear.
-  console.error("NEXT_PUBLIC_ENCRYPTION_KEY is not set. Content will not be encrypted.");
+  console.error("ENCRYPTION_KEY is not set. Content will not be encrypted.");
 }
 
 // We'll use a fallback key for environments where the key might not be set,
