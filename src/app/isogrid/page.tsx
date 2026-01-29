@@ -35,11 +35,11 @@ const INITIAL_ITEMS: CanvasItemData[] = [];
 
 const INITIAL_ARROWS: ArrowData[] = [];
 
-const INITIAL_SETTINGS: BoardSettings = { 
-  accentColor: '72 56% 63%', 
-  showGrid: true, 
-  gridStyle: 'dots', 
-  gridOpacity: 0.5, 
+const INITIAL_SETTINGS: BoardSettings = {
+  accentColor: '72 56% 63%',
+  showGrid: true,
+  gridStyle: 'dots',
+  gridOpacity: 0.5,
   vignetteIntensity: 0.5,
   defaultOpacity: 1,
   defaultBackgroundBlur: 0
@@ -56,8 +56,8 @@ type HistoryState = {
 };
 
 type ArrowDrawingState = {
-    isDrawing: boolean;
-    startPoint: Point | null;
+  isDrawing: boolean;
+  startPoint: Point | null;
 }
 
 type DraggedTodoInfo = {
@@ -70,7 +70,7 @@ export default function IsogridPage() {
   const [items, setItems] = useState<CanvasItemData[]>(INITIAL_ITEMS);
   const [arrows, setArrows] = useState<ArrowData[]>(INITIAL_ARROWS);
   const [boardStack, setBoardStack] = useState<Board[]>([ROOT_BOARD]);
-  
+
   const [history, setHistory] = useState<HistoryState[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
@@ -80,7 +80,7 @@ export default function IsogridPage() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean; itemId?: string }>({ x: 0, y: 0, show: false });
   const [arrowDrawingState, setArrowDrawingState] = useState<ArrowDrawingState>({ isDrawing: false, startPoint: null });
   const [previewArrow, setPreviewArrow] = useState<ArrowData | null>(null);
-  
+
   const [selectionBox, setSelectionBox] = useState<{ start: Point; end: Point; visible: boolean } | null>(null);
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [selectedArrowIds, setSelectedArrowIds] = useState<string[]>([]);
@@ -106,7 +106,7 @@ export default function IsogridPage() {
 
   const currentBoard = boardStack[boardStack.length - 1];
   const currentBoardId = currentBoard.id === 'root' ? null : currentBoard.id;
-  
+
   const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteIntensity = 0.5 } = settings;
 
   // --- Data Persistence ---
@@ -132,22 +132,22 @@ export default function IsogridPage() {
 
   const useDebouncedEffect = (effect: () => void, deps: any[], delay: number) => {
     useEffect(() => {
-        const handler = setTimeout(() => effect(), delay);
-        return () => clearTimeout(handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      const handler = setTimeout(() => effect(), delay);
+      return () => clearTimeout(handler);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [...(deps || []), delay]);
   };
-  
+
   useDebouncedEffect(() => {
-      if (currentUser && !isLoading) {
-          saveCanvasData(currentUser.uid, { items, arrows, settings });
-      }
+    if (currentUser && !isLoading) {
+      saveCanvasData(currentUser.uid, { items, arrows, settings });
+    }
   }, [items, arrows, settings, currentUser, isLoading], 1000);
-  
+
   // --- END Data Persistence ---
-  
+
   const updateState = (
-    newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]), 
+    newItems: CanvasItemData[] | ((prev: CanvasItemData[]) => CanvasItemData[]),
     newArrows: ArrowData[] | ((prev: ArrowData[]) => ArrowData[]),
     newSettings?: BoardSettings | ((prev: BoardSettings) => BoardSettings),
   ) => {
@@ -157,15 +157,15 @@ export default function IsogridPage() {
 
     const newHistoryEntry = { items: updatedItems, arrows: updatedArrows, settings: updatedSettings };
     const newHistory = [...history.slice(0, historyIndex + 1), newHistoryEntry];
-    
+
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
-    
+
     setItems(updatedItems);
     setArrows(updatedArrows);
     setSettings(updatedSettings);
   };
-  
+
   const undo = useCallback(() => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
@@ -191,7 +191,7 @@ export default function IsogridPage() {
   const filteredItems = items.filter(item => item.parentId === currentBoardId);
   const filteredArrows = arrows.filter(arrow => arrow.parentId === currentBoardId);
   const allCanvasItems: AnyCanvasItem[] = [...filteredItems, ...filteredArrows];
-  
+
   const screenToCanvas = useCallback((screenPoint: Point): Point => {
     if (!canvasRef.current) return screenPoint;
     const rect = canvasRef.current.getBoundingClientRect();
@@ -205,62 +205,61 @@ export default function IsogridPage() {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const clampedZoom = Math.max(0.5, Math.min(3, newZoom));
-  
+
     // Zoom towards the center of the canvas viewport
     const viewportCenter = { x: rect.width / 2, y: rect.height / 2 };
-  
+
     const mouseOnCanvasBeforeZoom = {
       x: (viewportCenter.x - viewState.pan.x) / viewState.zoom,
       y: (viewportCenter.y - viewState.pan.y) / viewState.zoom,
     };
-  
+
     const newPan = {
       x: viewportCenter.x - mouseOnCanvasBeforeZoom.x * clampedZoom,
       y: viewportCenter.y - mouseOnCanvasBeforeZoom.y * clampedZoom,
     };
-  
+
     setViewState({ zoom: clampedZoom, pan: newPan });
   };
-  
-  const handleWheel = useCallback((e: WheelEvent) => {
+
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    // Check if the wheel event is happening inside a ScrollArea viewport
+    const target = e.target as HTMLElement;
+    const isInsideScrollArea = target.closest('[data-radix-scroll-area-viewport]');
+
+    // If inside a scrollable area, don't prevent default and don't zoom
+    if (isInsideScrollArea) {
+      return;
+    }
+
     e.preventDefault();
+
     if (!canvasRef.current) return;
-    
+
     setViewState(currentViewState => {
-        const rect = canvasRef.current!.getBoundingClientRect();
-        const zoomFactor = 1.1;
-        const newZoom = e.deltaY < 0 ? currentViewState.zoom * zoomFactor : currentViewState.zoom / zoomFactor;
-        const clampedZoom = Math.max(0.5, Math.min(3, newZoom));
+      const rect = canvasRef.current!.getBoundingClientRect();
+      const zoomFactor = 1.1;
+      const newZoom = e.deltaY < 0 ? currentViewState.zoom * zoomFactor : currentViewState.zoom / zoomFactor;
+      const clampedZoom = Math.max(0.5, Math.min(3, newZoom));
 
-        const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-        const mouseOnCanvasBeforeZoom = {
-            x: (mousePos.x - currentViewState.pan.x) / currentViewState.zoom,
-            y: (mousePos.y - currentViewState.pan.y) / currentViewState.zoom
-        };
-        
-        const newPan = {
-          x: mousePos.x - mouseOnCanvasBeforeZoom.x * clampedZoom,
-          y: mousePos.y - mouseOnCanvasBeforeZoom.y * clampedZoom
-        };
+      const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const mouseOnCanvasBeforeZoom = {
+        x: (mousePos.x - currentViewState.pan.x) / currentViewState.zoom,
+        y: (mousePos.y - currentViewState.pan.y) / currentViewState.zoom
+      };
 
-        return { zoom: clampedZoom, pan: newPan };
+      const newPan = {
+        x: mousePos.x - mouseOnCanvasBeforeZoom.x * clampedZoom,
+        y: mousePos.y - mouseOnCanvasBeforeZoom.y * clampedZoom
+      };
+
+      return { zoom: clampedZoom, pan: newPan };
     });
-  }, []); // No dependencies needed
+  }, []);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    canvas.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => {
-      canvas.removeEventListener('wheel', handleWheel);
-    };
-  }, [handleWheel]);
-  
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     if (contextMenu.show) setContextMenu({ ...contextMenu, show: false });
-     const target = e.target as HTMLElement;
+    const target = e.target as HTMLElement;
     const isCanvasBackdropClick = target.dataset.isCanvasBackdrop === 'true';
 
     if (isCanvasBackdropClick) {
@@ -271,31 +270,31 @@ export default function IsogridPage() {
     }
 
     if (arrowDrawingState.isDrawing) {
-        const canvasPos = screenToCanvas({ x: e.clientX, y: e.clientY });
-        if (!arrowDrawingState.startPoint) {
-            setArrowDrawingState(s => ({ ...s, startPoint: canvasPos }));
-            setPreviewArrow({ id: 'preview-arrow', type: 'arrow', start: canvasPos, end: canvasPos, parentId: currentBoardId });
-        } else {
-            const newArrow: ArrowData = {
-                id: nanoid(),
-                type: 'arrow',
-                start: arrowDrawingState.startPoint,
-                end: canvasPos,
-                parentId: currentBoardId
-            };
-            updateState(items, prevArrows => [...prevArrows, newArrow]);
-            setArrowDrawingState({ isDrawing: false, startPoint: null });
-            setPreviewArrow(null);
-        }
-        return;
+      const canvasPos = screenToCanvas({ x: e.clientX, y: e.clientY });
+      if (!arrowDrawingState.startPoint) {
+        setArrowDrawingState(s => ({ ...s, startPoint: canvasPos }));
+        setPreviewArrow({ id: 'preview-arrow', type: 'arrow', start: canvasPos, end: canvasPos, parentId: currentBoardId });
+      } else {
+        const newArrow: ArrowData = {
+          id: nanoid(),
+          type: 'arrow',
+          start: arrowDrawingState.startPoint,
+          end: canvasPos,
+          parentId: currentBoardId
+        };
+        updateState(items, prevArrows => [...prevArrows, newArrow]);
+        setArrowDrawingState({ isDrawing: false, startPoint: null });
+        setPreviewArrow(null);
+      }
+      return;
     }
 
 
     if (e.button === 0 && !e.metaKey && !e.ctrlKey && isCanvasBackdropClick) {
-        const startPoint = { x: e.clientX, y: e.clientY };
-        setSelectionBox({ start: startPoint, end: startPoint, visible: true });
-        e.stopPropagation();
-        return;
+      const startPoint = { x: e.clientX, y: e.clientY };
+      setSelectionBox({ start: startPoint, end: startPoint, visible: true });
+      e.stopPropagation();
+      return;
     }
 
     if (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey))) {
@@ -304,20 +303,20 @@ export default function IsogridPage() {
       e.currentTarget.style.cursor = 'grabbing';
     }
     if (e.button === 2) {
-        if (arrowDrawingState.isDrawing) {
-            setArrowDrawingState({ isDrawing: false, startPoint: null });
-            setPreviewArrow(null);
-            e.preventDefault();
-            return;
-        }
-        rightClickDragInfo.current = { isDragging: false };
+      if (arrowDrawingState.isDrawing) {
+        setArrowDrawingState({ isDrawing: false, startPoint: null });
+        setPreviewArrow(null);
+        e.preventDefault();
+        return;
+      }
+      rightClickDragInfo.current = { isDragging: false };
     }
   };
-  
+
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (selectionBox?.visible) {
-        setSelectionBox(sb => sb ? { ...sb, end: { x: e.clientX, y: e.clientY } } : null);
-        return;
+      setSelectionBox(sb => sb ? { ...sb, end: { x: e.clientX, y: e.clientY } } : null);
+      return;
     }
     if (isPanning.current) {
       const dx = e.clientX - lastPanPoint.current.x;
@@ -325,73 +324,73 @@ export default function IsogridPage() {
       lastPanPoint.current = { x: e.clientX, y: e.clientY };
       setViewState(vs => ({ ...vs, pan: { x: vs.pan.x + dx, y: vs.pan.y + dy } }));
     }
-    if(e.buttons === 2 && !rightClickDragInfo.current.isDragging) {
-        rightClickDragInfo.current.isDragging = true;
+    if (e.buttons === 2 && !rightClickDragInfo.current.isDragging) {
+      rightClickDragInfo.current.isDragging = true;
     }
     if (arrowDrawingState.isDrawing && arrowDrawingState.startPoint && previewArrow) {
-        const canvasPos = screenToCanvas({ x: e.clientX, y: e.clientY });
-        setPreviewArrow({ ...previewArrow, end: canvasPos });
+      const canvasPos = screenToCanvas({ x: e.clientX, y: e.clientY });
+      setPreviewArrow({ ...previewArrow, end: canvasPos });
     }
   };
-  
+
   const handleMouseUp = (e: MouseEvent<HTMLDivElement>) => {
     if (selectionBox?.visible) {
-        const startCanvas = screenToCanvas(selectionBox.start);
-        const endCanvas = screenToCanvas(selectionBox.end);
+      const startCanvas = screenToCanvas(selectionBox.start);
+      const endCanvas = screenToCanvas(selectionBox.end);
 
-        const selectionRect = {
-            x: Math.min(startCanvas.x, endCanvas.x),
-            y: Math.min(startCanvas.y, endCanvas.y),
-            width: Math.abs(startCanvas.x - endCanvas.x),
-            height: Math.abs(startCanvas.y - endCanvas.y),
-        };
+      const selectionRect = {
+        x: Math.min(startCanvas.x, endCanvas.x),
+        y: Math.min(startCanvas.y, endCanvas.y),
+        width: Math.abs(startCanvas.x - endCanvas.x),
+        height: Math.abs(startCanvas.y - endCanvas.y),
+      };
 
-        const newlySelectedItems = filteredItems.filter(item => {
-            const itemRect = { x: item.position.x, y: item.position.y, width: item.width, height: 'auto' === item.height ? 100 : item.height };
-            return (
-                itemRect.x < selectionRect.x + selectionRect.width &&
-                itemRect.x + itemRect.width > selectionRect.x &&
-                itemRect.y < selectionRect.y + selectionRect.height &&
-                itemRect.y + itemRect.height > selectionRect.y
-            );
-        }).map(item => item.id);
-        
-        if (e.ctrlKey || e.metaKey) {
-            setSelectedItemIds(prevIds => {
-                const newIds = new Set(prevIds);
-                newlySelectedItems.forEach(id => {
-                    if (newIds.has(id)) {
-                        newIds.delete(id);
-                    } else {
-                        newIds.add(id);
-                    }
-                });
-                return Array.from(newIds);
-            });
-        } else {
-            setSelectedItemIds(newlySelectedItems);
-            setSelectedArrowIds([]); // Clear arrow selection on new area selection unless ctrl is held
-        }
-        setSelectionBox(null);
+      const newlySelectedItems = filteredItems.filter(item => {
+        const itemRect = { x: item.position.x, y: item.position.y, width: item.width, height: 'auto' === item.height ? 100 : item.height };
+        return (
+          itemRect.x < selectionRect.x + selectionRect.width &&
+          itemRect.x + itemRect.width > selectionRect.x &&
+          itemRect.y < selectionRect.y + selectionRect.height &&
+          itemRect.y + itemRect.height > selectionRect.y
+        );
+      }).map(item => item.id);
+
+      if (e.ctrlKey || e.metaKey) {
+        setSelectedItemIds(prevIds => {
+          const newIds = new Set(prevIds);
+          newlySelectedItems.forEach(id => {
+            if (newIds.has(id)) {
+              newIds.delete(id);
+            } else {
+              newIds.add(id);
+            }
+          });
+          return Array.from(newIds);
+        });
+      } else {
+        setSelectedItemIds(newlySelectedItems);
+        setSelectedArrowIds([]); // Clear arrow selection on new area selection unless ctrl is held
+      }
+      setSelectionBox(null);
     }
     isPanning.current = false;
     e.currentTarget.style.cursor = 'grab';
-    
+
     rightClickDragInfo.current = { isDragging: false };
   };
-  
+
   const handleContextMenu = (e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (arrowDrawingState.isDrawing) {
-        setArrowDrawingState({ isDrawing: false, startPoint: null });
-        setPreviewArrow(null);
+      setArrowDrawingState({ isDrawing: false, startPoint: null });
+      setPreviewArrow(null);
     } else {
-        const clickedItem = (e.target as HTMLElement).closest('[data-item-id], [data-arrow-id]');
-        const itemId = clickedItem ? (clickedItem.getAttribute('data-item-id') || clickedItem.getAttribute('data-arrow-id')) : undefined;
-        
-        setContextMenu({ x: e.clientX, y: e.clientY, show: true, itemId: itemId || undefined });
+      const clickedItem = (e.target as HTMLElement).closest('[data-item-id], [data-arrow-id]');
+      const itemId = clickedItem ? (clickedItem.getAttribute('data-item-id') || clickedItem.getAttribute('data-arrow-id')) : undefined;
+
+      setContextMenu({ x: e.clientX, y: e.clientY, show: true, itemId: itemId || undefined });
     }
     rightClickDragInfo.current = { isDragging: false };
   };
@@ -444,8 +443,8 @@ export default function IsogridPage() {
 
   const deleteItem = (itemId: string) => {
     updateState(
-        items.filter(item => item.id !== itemId),
-        arrows.filter(arrow => arrow.id !== itemId)
+      items.filter(item => item.id !== itemId),
+      arrows.filter(arrow => arrow.id !== itemId)
     );
     setContextMenu({ ...contextMenu, show: false });
   }
@@ -458,31 +457,31 @@ export default function IsogridPage() {
       return;
     }
     if (action === 'enter' && contextMenu.itemId) {
-        const item = items.find(i => i.id === contextMenu.itemId);
-        if (item && item.type === 'board') {
-            const newBoard: Board = { id: item.id, name: item.content };
-            setBoardStack(stack => [...stack, newBoard]);
-            setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
-            setHistory([{ items, arrows, settings }]);
-            setHistoryIndex(0);
-            setSelectedItemIds([]);
-            setSelectedArrowIds([]);
-        }
-        setContextMenu({ ...contextMenu, show: false });
-        return;
+      const item = items.find(i => i.id === contextMenu.itemId);
+      if (item && item.type === 'board') {
+        const newBoard: Board = { id: item.id, name: item.content };
+        setBoardStack(stack => [...stack, newBoard]);
+        setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
+        setHistory([{ items, arrows, settings }]);
+        setHistoryIndex(0);
+        setSelectedItemIds([]);
+        setSelectedArrowIds([]);
+      }
+      setContextMenu({ ...contextMenu, show: false });
+      return;
     }
     if (action === 'edit' && contextMenu.itemId) {
-        setEditingItemId(contextMenu.itemId);
-        setContextMenu({ ...contextMenu, show: false });
-        return;
+      setEditingItemId(contextMenu.itemId);
+      setContextMenu({ ...contextMenu, show: false });
+      return;
     }
 
     setContextMenu({ ...contextMenu, show: false });
-    
+
     if (action === 'arrow') {
-        setArrowDrawingState({ isDrawing: true, startPoint: null });
+      setArrowDrawingState({ isDrawing: true, startPoint: null });
     } else if (action !== 'delete' && action !== 'enter' && action !== 'edit') {
-        addItem(action, canvasPos);
+      addItem(action, canvasPos);
     }
   };
 
@@ -492,7 +491,7 @@ export default function IsogridPage() {
       arrows
     );
   };
-  
+
   const handleItemsUpdate = (updates: (Partial<CanvasItemData> & { id: string })[]) => {
     updateState(
       items.map(item => {
@@ -505,39 +504,39 @@ export default function IsogridPage() {
 
   const handleArrowUpdate = (updatedArrow: Partial<ArrowData> & { id: string }) => {
     updateState(
-        items,
-        arrows.map(arrow => arrow.id === updatedArrow.id ? { ...arrow, ...updatedArrow } : arrow)
+      items,
+      arrows.map(arrow => arrow.id === updatedArrow.id ? { ...arrow, ...updatedArrow } : arrow)
     );
   }
-  
+
   const handleItemClick = (id: string, e: MouseEvent) => {
     e.stopPropagation();
     setSelectedArrowIds([]);
     if (e.ctrlKey || e.metaKey) {
-        setSelectedItemIds(ids => 
-            ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
-        );
+      setSelectedItemIds(ids =>
+        ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
+      );
     } else {
-        if (!selectedItemIds.includes(id) || selectedItemIds.length > 1) {
-            setSelectedItemIds([id]);
-        }
+      if (!selectedItemIds.includes(id) || selectedItemIds.length > 1) {
+        setSelectedItemIds([id]);
+      }
     }
   };
-  
+
   const handleArrowClick = (id: string, e: MouseEvent) => {
     e.stopPropagation();
     setSelectedItemIds([]);
     if (e.ctrlKey || e.metaKey) {
-        setSelectedArrowIds(ids =>
-            ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
-        );
+      setSelectedArrowIds(ids =>
+        ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
+      );
     } else {
-        if (!selectedArrowIds.includes(id) || selectedArrowIds.length > 1) {
-            setSelectedArrowIds([id]);
-        }
+      if (!selectedArrowIds.includes(id) || selectedArrowIds.length > 1) {
+        setSelectedArrowIds([id]);
+      }
     }
   };
-  
+
   const handleItemDoubleClick = (item: CanvasItemData) => {
     if (item.type === 'board') {
       const newBoard: Board = { id: item.id, name: item.content };
@@ -553,58 +552,58 @@ export default function IsogridPage() {
   };
 
   const navigateToBoard = (boardIndex: number) => {
-      setBoardStack(stack => stack.slice(0, boardIndex + 1));
-      setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
-      setHistory([{ items, arrows, settings }]);
-      setHistoryIndex(0);
-      setSelectedItemIds([]);
-      setSelectedArrowIds([]);
+    setBoardStack(stack => stack.slice(0, boardIndex + 1));
+    setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
+    setHistory([{ items, arrows, settings }]);
+    setHistoryIndex(0);
+    setSelectedItemIds([]);
+    setSelectedArrowIds([]);
   };
 
   const handleSettingsChange = (newSettings: Partial<BoardSettings>) => {
     updateState(items, arrows, prevSettings => ({ ...prevSettings, ...newSettings }));
   };
-  
+
   const handlePaste = useCallback(async (event: ClipboardEvent) => {
     const pastedItems = event.clipboardData?.items;
     if (!pastedItems) return;
 
     for (let i = 0; i < pastedItems.length; i++) {
-        if (pastedItems[i].type.indexOf('image') !== -1) {
-            const blob = pastedItems[i].getAsFile();
-            if (!blob) continue;
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const src = e.target?.result as string;
-                if (!src) return;
-                
-                const img = new Image();
-                img.onload = () => {
-                    const MAX_WIDTH = 400;
-                    const aspectRatio = img.naturalWidth / img.naturalHeight;
-                    const width = Math.min(img.naturalWidth, MAX_WIDTH);
-                    const height = width / aspectRatio;
+      if (pastedItems[i].type.indexOf('image') !== -1) {
+        const blob = pastedItems[i].getAsFile();
+        if (!blob) continue;
 
-                    const canvasCenter = screenToCanvas({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-                    
-                    const newItem: CanvasItemData = {
-                        id: nanoid(),
-                        type: 'image',
-                        position: {x: canvasCenter.x - width/2, y: canvasCenter.y - height/2},
-                        width: width,
-                        height: height,
-                        content: src,
-                        parentId: currentBoardId,
-                    };
-                    updateState(prev => [...prev, newItem], arrows);
-                    toast({ title: "Image pasted successfully!" });
-                };
-                img.src = src;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const src = e.target?.result as string;
+          if (!src) return;
+
+          const img = new Image();
+          img.onload = () => {
+            const MAX_WIDTH = 400;
+            const aspectRatio = img.naturalWidth / img.naturalHeight;
+            const width = Math.min(img.naturalWidth, MAX_WIDTH);
+            const height = width / aspectRatio;
+
+            const canvasCenter = screenToCanvas({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+
+            const newItem: CanvasItemData = {
+              id: nanoid(),
+              type: 'image',
+              position: { x: canvasCenter.x - width / 2, y: canvasCenter.y - height / 2 },
+              width: width,
+              height: height,
+              content: src,
+              parentId: currentBoardId,
             };
-            reader.readAsDataURL(blob);
-            return;
-        }
+            updateState(prev => [...prev, newItem], arrows);
+            toast({ title: "Image pasted successfully!" });
+          };
+          img.src = src;
+        };
+        reader.readAsDataURL(blob);
+        return;
+      }
     }
   }, [screenToCanvas, toast, currentBoardId, arrows, items, updateState]);
 
@@ -612,8 +611,8 @@ export default function IsogridPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (arrowDrawingState.isDrawing) {
-            setArrowDrawingState({ isDrawing: false, startPoint: null });
-            setPreviewArrow(null);
+          setArrowDrawingState({ isDrawing: false, startPoint: null });
+          setPreviewArrow(null);
         }
         setSelectedItemIds([]);
         setSelectedArrowIds([]);
@@ -630,7 +629,7 @@ export default function IsogridPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [arrowDrawingState.isDrawing, undo, redo]);
-  
+
   useEffect(() => {
     document.addEventListener('paste', handlePaste);
     return () => {
@@ -650,60 +649,60 @@ export default function IsogridPage() {
   const handleBoardNameChange = (boardId: string, newName: string) => {
     // Update the item content
     handleItemUpdate({ id: boardId, content: newName });
-    
+
     // Update the boardStack
     setBoardStack(stack => stack.map(b => b.id === boardId ? { ...b, name: newName } : b));
 
     setEditingBoardId(null);
   };
-  
+
   const handleTodoDragStart = (sourceListId: string, todo: TodoListItem) => {
     setDraggedTodo({ sourceListId, todo });
   };
 
   const handleTodoDrop = (targetListId: string, targetTodoId?: string) => {
     if (!draggedTodo) return;
-  
+
     const { sourceListId, todo } = draggedTodo;
-    
+
     // Prevent dropping on the same list if just reordering
     if (sourceListId === targetListId && !targetTodoId) return;
 
     updateState(prevItems => {
-        let newItems = [...prevItems];
-        
-        // Remove from source list
-        const sourceListIndex = newItems.findIndex(item => item.id === sourceListId);
-        if (sourceListIndex !== -1) {
-            const sourceList = { ...newItems[sourceListIndex] };
-            sourceList.todos = (sourceList.todos || []).filter(t => t.id !== todo.id);
-            newItems[sourceListIndex] = sourceList;
+      let newItems = [...prevItems];
+
+      // Remove from source list
+      const sourceListIndex = newItems.findIndex(item => item.id === sourceListId);
+      if (sourceListIndex !== -1) {
+        const sourceList = { ...newItems[sourceListIndex] };
+        sourceList.todos = (sourceList.todos || []).filter(t => t.id !== todo.id);
+        newItems[sourceListIndex] = sourceList;
+      }
+
+      // Add to target list
+      const targetListIndex = newItems.findIndex(item => item.id === targetListId);
+      if (targetListIndex !== -1) {
+        const targetList = { ...newItems[targetListIndex] };
+        let targetTodos = [...(targetList.todos || [])];
+
+        if (targetTodoId) {
+          // Insert at a specific position
+          const dropIndex = targetTodos.findIndex(t => t.id === targetTodoId);
+          if (dropIndex !== -1) {
+            targetTodos.splice(dropIndex, 0, todo);
+          } else {
+            targetTodos.push(todo); // Fallback
+          }
+        } else {
+          // Add to the end
+          targetTodos.push(todo);
         }
 
-        // Add to target list
-        const targetListIndex = newItems.findIndex(item => item.id === targetListId);
-        if (targetListIndex !== -1) {
-            const targetList = { ...newItems[targetListIndex] };
-            let targetTodos = [...(targetList.todos || [])];
-            
-            if (targetTodoId) {
-                // Insert at a specific position
-                const dropIndex = targetTodos.findIndex(t => t.id === targetTodoId);
-                if (dropIndex !== -1) {
-                    targetTodos.splice(dropIndex, 0, todo);
-                } else {
-                    targetTodos.push(todo); // Fallback
-                }
-            } else {
-                // Add to the end
-                targetTodos.push(todo);
-            }
-            
-            targetList.todos = targetTodos;
-            newItems[targetListIndex] = targetList;
-        }
-        
-        return newItems;
+        targetList.todos = targetTodos;
+        newItems[targetListIndex] = targetList;
+      }
+
+      return newItems;
     }, arrows);
 
     setDraggedTodo(null);
@@ -726,7 +725,7 @@ export default function IsogridPage() {
     URL.revokeObjectURL(url);
     toast({ title: 'Exported successfully!' });
   };
-  
+
   const handleImportClick = () => {
     importInputRef.current?.click();
   };
@@ -781,11 +780,11 @@ export default function IsogridPage() {
 
 
   const scaledGridSize = GRID_SIZE * viewState.zoom;
-  
-  const gridBackgroundImage = gridStyle === 'dots' 
+
+  const gridBackgroundImage = gridStyle === 'dots'
     ? `radial-gradient(hsl(var(--muted-foreground) / ${gridOpacity}) 1px, transparent 0)`
     : `linear-gradient(hsl(var(--muted-foreground) / ${gridOpacity}) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--muted-foreground) / ${gridOpacity}) 1px, transparent 1px)`;
-  
+
   const gridStyleProps: React.CSSProperties = {
     backgroundImage: gridBackgroundImage,
     backgroundSize: `${scaledGridSize}px ${scaledGridSize}px`,
@@ -794,7 +793,7 @@ export default function IsogridPage() {
 
   const getCursor = () => {
     if (arrowDrawingState.isDrawing) return 'crosshair';
-    if(selectionBox?.visible) return 'crosshair';
+    if (selectionBox?.visible) return 'crosshair';
     return 'grab';
   }
 
@@ -809,9 +808,9 @@ export default function IsogridPage() {
 
   if (isLoading || !currentUser) {
     return (
-        <main className="w-screen h-screen flex items-center justify-center bg-background">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </main>
+      <main className="w-screen h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </main>
     );
   }
 
@@ -842,167 +841,168 @@ export default function IsogridPage() {
         onMouseUp={handleMouseUp}
         onContextMenu={handleContextMenu}
         onClick={handleCanvasClick}
+        onWheel={handleWheel}
       >
-          <div data-is-canvas-backdrop="true" className="absolute inset-0 w-full h-full" />
-          {showGrid && (
-              <div
-                  data-is-canvas-backdrop="true"
-                  className="fixed inset-0 w-full h-full pointer-events-none"
-                  style={gridStyleProps}
-              />
-          )}
-
-          <div 
+        <div data-is-canvas-backdrop="true" className="absolute inset-0 w-full h-full" />
+        {showGrid && (
+          <div
             data-is-canvas-backdrop="true"
-            className="w-full h-full relative"
-            style={{ transform: `translate(${viewState.pan.x}px, ${viewState.pan.y}px) scale(${viewState.zoom})`, transformOrigin: '0 0' }}
-          >
-             <svg
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    pointerEvents: 'none',
-                    overflow: 'visible',
-                }}
-             >
-                <defs>
-                    <marker
-                    id="arrowhead"
-                    markerWidth="10"
-                    markerHeight="7"
-                    refX="10"
-                    refY="3.5"
-                    orient="auto"
-                    >
-                    <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--primary))" />
-                    </marker>
-                </defs>
+            className="fixed inset-0 w-full h-full pointer-events-none"
+            style={gridStyleProps}
+          />
+        )}
 
-                {previewArrow && (
-                  <line
-                      x1={previewArrow.start.x}
-                      y1={previewArrow.start.y}
-                      x2={previewArrow.end.x}
-                      y2={previewArrow.end.y}
-                      stroke="hsl(var(--primary))"
-                      strokeWidth="2"
-                      markerEnd="url(#arrowhead)"
-                  />
-                )}
-                 {filteredArrows.map(arrow => (
-                  <InteractiveArrow
-                    key={arrow.id}
-                    arrow={arrow}
-                    zoom={viewState.zoom}
-                    onUpdate={handleArrowUpdate}
-                    onClick={(e) => handleArrowClick(arrow.id, e)}
-                    isSelected={selectedArrowIds.includes(arrow.id)}
-                  />
-              ))}
-             </svg>
-             
-              {filteredItems.map(item => (
-                  <CanvasItem 
-                      key={item.id}
-                      item={item}
-                      zoom={viewState.zoom}
-                      onUpdate={handleItemUpdate}
-                      onClick={(e) => handleItemClick(item.id, e)}
-                      onDoubleClick={() => handleItemDoubleClick(item)}
-                      onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({x: e.clientX, y: e.clientY, show: true, itemId: item.id})}}
-                      isSelected={selectedItemIds.includes(item.id)}
-                      isEditing={editingItemId === item.id}
-                      onEditEnd={() => setEditingItemId(null)}
-                      onTodoDragStart={handleTodoDragStart}
-                      onTodoDrop={handleTodoDrop}
-                      isDropTarget={dropTargetId === item.id}
-                      onDragEnter={() => draggedTodo && draggedTodo.sourceListId !== item.id && setDropTargetId(item.id)}
-                      onDragLeave={() => setDropTargetId(null)}
-                      settings={settings}
-                      onTextareaFocus={setActiveTextarea}
-                  />
-              ))}
-          </div>
+        <div
+          data-is-canvas-backdrop="true"
+          className="w-full h-full relative"
+          style={{ transform: `translate(${viewState.pan.x}px, ${viewState.pan.y}px) scale(${viewState.zoom})`, transformOrigin: '0 0' }}
+        >
+          <svg
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
+              overflow: 'visible',
+            }}
+          >
+            <defs>
+              <marker
+                id="arrowhead"
+                markerWidth="10"
+                markerHeight="7"
+                refX="10"
+                refY="3.5"
+                orient="auto"
+              >
+                <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--primary))" />
+              </marker>
+            </defs>
+
+            {previewArrow && (
+              <line
+                x1={previewArrow.start.x}
+                y1={previewArrow.start.y}
+                x2={previewArrow.end.x}
+                y2={previewArrow.end.y}
+                stroke="hsl(var(--primary))"
+                strokeWidth="2"
+                markerEnd="url(#arrowhead)"
+              />
+            )}
+            {filteredArrows.map(arrow => (
+              <InteractiveArrow
+                key={arrow.id}
+                arrow={arrow}
+                zoom={viewState.zoom}
+                onUpdate={handleArrowUpdate}
+                onClick={(e) => handleArrowClick(arrow.id, e)}
+                isSelected={selectedArrowIds.includes(arrow.id)}
+              />
+            ))}
+          </svg>
+
+          {filteredItems.map(item => (
+            <CanvasItem
+              key={item.id}
+              item={item}
+              zoom={viewState.zoom}
+              onUpdate={handleItemUpdate}
+              onClick={(e) => handleItemClick(item.id, e)}
+              onDoubleClick={() => handleItemDoubleClick(item)}
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, show: true, itemId: item.id }) }}
+              isSelected={selectedItemIds.includes(item.id)}
+              isEditing={editingItemId === item.id}
+              onEditEnd={() => setEditingItemId(null)}
+              onTodoDragStart={handleTodoDragStart}
+              onTodoDrop={handleTodoDrop}
+              isDropTarget={dropTargetId === item.id}
+              onDragEnter={() => draggedTodo && draggedTodo.sourceListId !== item.id && setDropTargetId(item.id)}
+              onDragLeave={() => setDropTargetId(null)}
+              settings={settings}
+              onTextareaFocus={setActiveTextarea}
+            />
+          ))}
+        </div>
 
       </div>
-      <div 
+      <div
         className="absolute inset-0 pointer-events-none"
-        style={{ boxShadow: `inset 0 0 10vw 5vw hsl(0 0% 0% / ${vignetteIntensity})`}}
+        style={{ boxShadow: `inset 0 0 10vw 5vw hsl(0 0% 0% / ${vignetteIntensity})` }}
       />
       {selectionBox && selectionBox.visible && <SelectionBox start={selectionBox.start} end={selectionBox.end} />}
-      
+
       {/* User Greeting */}
       <div className="absolute top-8 left-8 z-10 text-white font-bold text-3xl">
-        {currentUser?.displayName 
-          ? `Hi ${currentUser.displayName.split(' ')[0]}` 
+        {currentUser?.displayName
+          ? `Hi ${currentUser.displayName.split(' ')[0]}`
           : `Welcome ${currentUser?.email?.split('@')[0]}`
         }
       </div>
-      
+
       {/* Top Right Navbar */}
       <div className="absolute top-4 right-4 z-10 p-1 rounded-lg bg-background/80 backdrop-blur-sm flex items-center gap-1">
         <div className="flex items-center text-sm text-foreground px-2">
-            {boardStack.map((board, index) => (
-                <div key={board.id} className="flex items-center space-x-2">
-                    {index > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-                    
-                    {editingBoardId === board.id ? (
-                        <Input
-                            type="text"
-                            defaultValue={board.name}
-                            autoFocus
-                            onBlur={(e) => handleBoardNameChange(board.id, e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleBoardNameChange(board.id, e.currentTarget.value);
-                                if (e.key === 'Escape') setEditingBoardId(null);
-                            }}
-                            className="h-auto p-0 text-sm bg-transparent border-primary"
-                        />
-                    ) : (
-                        <Button
-                            variant="link"
-                            className="p-0 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
-                            onClick={() => navigateToBoard(index)}
-                            onDoubleClick={() => {
-                                if (board.id !== 'root') {
-                                    setEditingBoardId(board.id);
-                                }
-                            }}
-                        >
-                            {board.id === 'root' ? <Home className="w-4 h-4" /> : board.name}
-                        </Button>
-                    )}
-                </div>
-            ))}
+          {boardStack.map((board, index) => (
+            <div key={board.id} className="flex items-center space-x-2">
+              {index > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+
+              {editingBoardId === board.id ? (
+                <Input
+                  type="text"
+                  defaultValue={board.name}
+                  autoFocus
+                  onBlur={(e) => handleBoardNameChange(board.id, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleBoardNameChange(board.id, e.currentTarget.value);
+                    if (e.key === 'Escape') setEditingBoardId(null);
+                  }}
+                  className="h-auto p-0 text-sm bg-transparent border-primary"
+                />
+              ) : (
+                <Button
+                  variant="link"
+                  className="p-0 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                  onClick={() => navigateToBoard(index)}
+                  onDoubleClick={() => {
+                    if (board.id !== 'root') {
+                      setEditingBoardId(board.id);
+                    }
+                  }}
+                >
+                  {board.id === 'root' ? <Home className="w-4 h-4" /> : board.name}
+                </Button>
+              )}
+            </div>
+          ))}
         </div>
 
         <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon">
-                    <Cog className="w-5 h-5"/>
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="min-w-[20rem] max-w-md max-h-[70vh] overflow-y-auto" style={{ width: 'auto' }}>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Cog className="w-5 h-5" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="min-w-[20rem] max-w-md max-h-[70vh] overflow-y-auto" style={{ width: 'auto' }}>
+            <div className="space-y-4">
               <div className="space-y-4">
-                  <div className="space-y-4">
-                    <SettingsPopover 
-                      settings={settings} 
-                      onSettingsChange={handleSettingsChange}
-                      zoom={viewState.zoom}
-                      onZoomChange={handleZoom}
-                      onExport={handleExport}
-                      onImport={handleImportClick}
-                      onSignOut={handleSignOut}
-                    />
-                  </div>
+                <SettingsPopover
+                  settings={settings}
+                  onSettingsChange={handleSettingsChange}
+                  zoom={viewState.zoom}
+                  onZoomChange={handleZoom}
+                  onExport={handleExport}
+                  onImport={handleImportClick}
+                  onSignOut={handleSignOut}
+                />
               </div>
-            </PopoverContent>
+            </div>
+          </PopoverContent>
         </Popover>
-        </div>
-      {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} itemType={allCanvasItems.find(i=>i.id===contextMenu.itemId)?.type} accentColor={accentColor} />}
+      </div>
+      {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} itemType={allCanvasItems.find(i => i.id === contextMenu.itemId)?.type} accentColor={accentColor} />}
       {(selectedTextItems.length > 0 || activeTextarea) && (
         <FormattingToolbar
           items={selectedTextItems}
