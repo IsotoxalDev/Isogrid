@@ -62,7 +62,7 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop, sett
                 </div>
             )}
             {todos.map((todo) => (
-                <div 
+                <div
                     key={todo.id}
                     className="flex items-center space-x-2 py-1.5 group min-h-[36px]"
                     draggable
@@ -81,9 +81,9 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop, sett
                     )}>
                         {todo.text}
                     </span>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
                         onClick={() => handleDelete(todo.id)}
                     >
@@ -96,20 +96,22 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop, sett
     );
 
     return (
-        <div className="flex flex-col h-fit w-full" data-no-drag="true">
+        <div
+            className="flex flex-col h-fit w-full"
+            data-no-drag="true"
+        >
             {/* The Box */}
             <div className="flex flex-col w-full border border-border rounded-xl bg-card/30 p-3 shadow-sm transition-all duration-200">
-                
+
                 {/* SCROLL LOGIC:
                     1. If items <= 4: h-auto (grows pixel by pixel).
                     2. If items > 4: h-[160px] (locks height, enabling ScrollArea).
                 */}
-                <div 
+                <div
                     className={cn(
                         "w-full transition-all duration-300 ease-in-out",
                         isOverLimit ? "h-[160px]" : "h-auto"
                     )}
-                    onWheel={(e) => e.stopPropagation()}
                 >
                     {isOverLimit ? (
                         /* Only use ScrollArea when we have a fixed height */
@@ -136,7 +138,7 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop, sett
                         onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
                         className="h-8 bg-background/50 border-border text-foreground text-xs focus-visible:ring-primary focus-visible:ring-1 focus-visible:border-transparent"
                     />
-                    <Button 
+                    <Button
                         onClick={handleAddTodo}
                         size="sm"
                         className="h-8 w-8 bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 p-0"
