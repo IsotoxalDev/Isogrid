@@ -407,8 +407,8 @@ export default function IsogridPage() {
       newItem = {
         ...baseItem,
         type,
-        width: 300,
-        height: 'auto',
+        width: 400,
+        height: 600,
         content: 'New Todo List',
         todos: [],
       };
