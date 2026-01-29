@@ -21,11 +21,11 @@ interface TodoItemProps {
 
 const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop, settings }) => {
     const [newTodoText, setNewTodoText] = useState('');
+    const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+    const [editingTodoText, setEditingTodoText] = useState('');
     const scrollEndRef = useRef<HTMLDivElement>(null);
 
     const todos = item.todos || [];
-    const MAX_ITEMS_BEFORE_SCROLL = 4;
-    const isOverLimit = todos.length > MAX_ITEMS_BEFORE_SCROLL;
 
     // Auto-scroll to bottom when a new item is added
     useEffect(() => {
@@ -54,6 +54,20 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop, sett
         onUpdate({ id: item.id, todos: updated });
     };
 
+    const handleStartEdit = (todo: TodoListItem) => {
+        setEditingTodoId(todo.id);
+        setEditingTodoText(todo.text);
+    };
+
+    const handleSaveEdit = (todoId: string) => {
+        if (editingTodoText.trim()) {
+            const updated = todos.map(t => t.id === todoId ? { ...t, text: editingTodoText } : t);
+            onUpdate({ id: item.id, todos: updated });
+        }
+        setEditingTodoId(null);
+        setEditingTodoText('');
+    };
+
     const renderRows = () => (
         <div className="flex flex-col gap-1 pr-3 pb-1">
             {todos.length === 0 && (
@@ -64,7 +78,7 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop, sett
             {todos.map((todo) => (
                 <div
                     key={todo.id}
-                    className="flex items-center space-x-2 py-1.5 group min-h-[36px]"
+                    className="flex items-start space-x-2 py-1.5 group min-h-[36px]"
                     draggable
                     onDragStart={() => onDragStart(item.id, todo)}
                     onDrop={(e) => { e.stopPropagation(); onDrop(item.id, todo.id); }}
@@ -73,18 +87,42 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop, sett
                     <Checkbox
                         checked={todo.completed}
                         onCheckedChange={() => handleToggle(todo.id)}
-                        className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary w-4 h-4 rounded-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary w-4 h-4 rounded-sm focus-visible:ring-0 focus-visible:ring-offset-0 mt-0.5 shrink-0"
                     />
-                    <span className={cn(
-                        "flex-grow text-sm text-foreground truncate select-none cursor-default",
-                        todo.completed && "line-through text-muted-foreground transition-colors"
-                    )}>
-                        {todo.text}
-                    </span>
+                    {editingTodoId === todo.id ? (
+                        <Input
+                            value={editingTodoText}
+                            onChange={(e) => setEditingTodoText(e.target.value)}
+                            onBlur={() => handleSaveEdit(todo.id)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleSaveEdit(todo.id);
+                                } else if (e.key === 'Escape') {
+                                    setEditingTodoId(null);
+                                    setEditingTodoText('');
+                                }
+                            }}
+                            autoFocus
+                            className="flex-grow h-7 text-sm bg-background/50 border-border"
+                        />
+                    ) : (
+                        <span
+                            className={cn(
+                                "flex-grow text-sm text-foreground whitespace-normal break-all select-none cursor-pointer",
+                                todo.completed && "line-through text-muted-foreground transition-colors"
+                            )}
+                            onDoubleClick={(e) => {
+                                e.stopPropagation();
+                                handleStartEdit(todo);
+                            }}
+                        >
+                            {todo.text}
+                        </span>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
                         onClick={() => handleDelete(todo.id)}
                     >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -97,55 +135,32 @@ const TodoItem: FC<TodoItemProps> = ({ item, onUpdate, onDragStart, onDrop, sett
 
     return (
         <div
-            className="flex flex-col h-fit w-full"
+            className="flex flex-col h-full w-full"
             data-no-drag="true"
         >
-            {/* The Box */}
-            <div className="flex flex-col w-full border border-border rounded-xl bg-card/30 p-3 shadow-sm transition-all duration-200">
+            {/* Scrollable content area - always uses ScrollArea */}
+            <div className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full w-full">
+                    {renderRows()}
+                </ScrollArea>
+            </div>
 
-                {/* SCROLL LOGIC:
-                    1. If items <= 4: h-auto (grows pixel by pixel).
-                    2. If items > 4: h-[160px] (locks height, enabling ScrollArea).
-                */}
-                <div
-                    className={cn(
-                        "w-full transition-all duration-300 ease-in-out",
-                        isOverLimit ? "h-[160px]" : "h-auto"
-                    )}
+            {/* INPUT FOOTER */}
+            <div className="shrink-0 flex items-center space-x-2 pt-3 mt-2 border-t border-border">
+                <Input
+                    placeholder="Add item..."
+                    value={newTodoText}
+                    onChange={(e) => setNewTodoText(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
+                    className="h-8 bg-background/50 border-border text-foreground text-xs focus-visible:ring-primary focus-visible:ring-1 focus-visible:border-transparent"
+                />
+                <Button
+                    onClick={handleAddTodo}
+                    size="sm"
+                    className="h-8 w-8 bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 p-0"
                 >
-                    {isOverLimit ? (
-                        /* Only use ScrollArea when we have a fixed height */
-                        <ScrollArea className="h-full w-full">
-                            {renderRows()}
-                        </ScrollArea>
-                    ) : (
-                        /* Normal div when growing naturally */
-                        <div className="flex flex-col">
-                            {renderRows()}
-                        </div>
-                    )}
-                </div>
-
-                {/* INPUT FOOTER:
-                   shrink-0 ensures this never gets squashed or overlaid.
-                   z-10 ensures it stays on top if layout glitches (though flex should handle it).
-                */}
-                <div className="shrink-0 flex items-center space-x-2 pt-3 mt-2 border-t border-border z-10 bg-transparent">
-                    <Input
-                        placeholder="Add item..."
-                        value={newTodoText}
-                        onChange={(e) => setNewTodoText(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
-                        className="h-8 bg-background/50 border-border text-foreground text-xs focus-visible:ring-primary focus-visible:ring-1 focus-visible:border-transparent"
-                    />
-                    <Button
-                        onClick={handleAddTodo}
-                        size="sm"
-                        className="h-8 w-8 bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 p-0"
-                    >
-                        <Plus className="w-4 h-4" />
-                    </Button>
-                </div>
+                    <Plus className="w-4 h-4" />
+                </Button>
             </div>
         </div>
     );
