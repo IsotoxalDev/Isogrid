@@ -16,8 +16,8 @@ export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Refs for direct DOM manipulation on scroll
-  const gridRef = useRef(null);
-  const blobsRef = useRef(null); // New ref for the glow container
+  const gridRef = useRef<HTMLDivElement>(null);
+  const blobsRef = useRef<HTMLDivElement>(null); // New ref for the glow container
 
   const router = useRouter();
 
@@ -370,9 +370,9 @@ const features = [
   },
   {
     icon: Zap,
-    title: "Lightning Fast",
+    title: "Try Instantly",
     description:
-      "Instant responsiveness with real-time synchronization. No lag, no delays, just pure productivity.",
+      "Start creating immediately without an account. Your work is saved locally in your browser.",
   },
   {
     icon: Share2,
@@ -394,9 +394,9 @@ const features = [
   },
   {
     icon: Zap,
-    title: "Save Anywhere",
+    title: "Seamless Sync",
     description:
-      "Auto-save to the cloud. Access your canvases from anywhere, anytime, on any device.",
+      "Sign in to automatically upload your local work to the cloud and access it from any device.",
   },
 ];
 

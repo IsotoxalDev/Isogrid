@@ -29,7 +29,9 @@
 - **Arrows** - Connect elements with directional arrows
 
 ### Sync & Persistence
-- **Real-time Sync** - Firebase-backed automatic saving
+- **Real-time Sync** - Firebase-backed automatic saving for logged-in users
+- **Guest Mode** - Try the app without an account. Work is saved to browser LocalStorage
+- **Seamless Migration** - Local data (including images) is automatically uploaded to account upon login
 - **User Authentication** - Email-based access with verification
 - **Import/Export** - Download and restore canvas data as JSON
 
