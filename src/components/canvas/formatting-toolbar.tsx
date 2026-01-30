@@ -11,8 +11,11 @@ import {
   Underline,
   Plus,
   Minus,
+  Blend,
+  BoxSelect,
+  Palette,
 } from 'lucide-react';
-import { CanvasItemData, TextAlign } from '@/lib/types';
+import { CanvasItemData, TextAlign, FontWeight, FontStyle, TextDecoration } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -49,11 +52,11 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
     };
 
     const handleBlur = (e: FocusEvent) => {
-        if (!e.currentTarget || !(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node | null)) {
-            onBlur();
-        }
+      if (!e.currentTarget || !(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node | null)) {
+        onBlur();
+      }
     }
-    
+
     document.addEventListener('selectionchange', handleSelectionChange);
     activeTextarea?.addEventListener('blur', handleBlur);
 
@@ -64,7 +67,7 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
   }, [activeTextarea, getSelectionDetails, onBlur]);
 
   if (items.length === 0 && !activeTextarea) return null;
-  
+
   const targetItems = activeTextarea ? (currentItem ? [currentItem] : []) : items;
   if (targetItems.length === 0) return null;
 
@@ -75,23 +78,28 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
     }
     return defaultValue; // Return default if values are mixed
   };
-  
-  const commonFontSize = getCommonValue('fontSize', 16);
-  const commonFontWeight = getCommonValue('fontWeight', 'normal');
-  const commonFontStyle = getCommonValue('fontStyle', 'normal');
-  const commonTextDecoration = getCommonValue('textDecoration', 'none');
+
+  const commonFontSize = getCommonValue<number>('fontSize', 16);
+  const commonFontWeight = getCommonValue<FontWeight>('fontWeight', 'normal');
+  const commonFontStyle = getCommonValue<FontStyle>('fontStyle', 'normal');
+  const commonTextDecoration = getCommonValue<TextDecoration>('textDecoration', 'none');
   const commonTextAlign = currentItem?.textAligns?.[currentLine] || currentItem?.textAlign || 'left';
+
+  const commonTitleShadow = getCommonValue('titleShadow', false);
+  const commonTitleOutline = getCommonValue('titleOutline', false);
+  const commonColor = getCommonValue('color', undefined);
+  const isTitle = targetItems.some(i => i.type === 'title');
 
   const handleUpdate = (update: Partial<Omit<CanvasItemData, 'id' | 'textAligns'>>) => {
     const updates = targetItems.map((item) => ({ id: item.id, ...update }));
     onUpdate(updates);
   };
-  
+
   const handleToggle = (prop: keyof CanvasItemData, activeValue: any, inactiveValue: any) => {
     const currentValue = getCommonValue(prop, inactiveValue);
     handleUpdate({ [prop]: currentValue === activeValue ? inactiveValue : activeValue });
   };
-  
+
   const handleFontSizeChange = (increment: number) => {
     const newSize = Math.max(8, commonFontSize + increment);
     handleUpdate({ fontSize: newSize });
@@ -99,18 +107,18 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
 
   const handleTextAlignChange = (newAlign: TextAlign) => {
     if (activeTextarea && currentItem) {
-        const newAlignments = [...(currentItem.textAligns || [])];
-        newAlignments[currentLine] = newAlign;
-        onTextareaUpdate({ id: currentItem.id, textAligns: newAlignments });
+      const newAlignments = [...(currentItem.textAligns || [])];
+      newAlignments[currentLine] = newAlign;
+      onTextareaUpdate({ id: currentItem.id, textAligns: newAlignments });
     } else {
-        const updates = targetItems.map((item) => {
-            const numLines = item.content.split('\n').length;
-            return {
-                id: item.id,
-                textAligns: Array(numLines).fill(newAlign),
-            }
-        });
-        onUpdate(updates as any);
+      const updates = targetItems.map((item) => {
+        const numLines = item.content.split('\n').length;
+        return {
+          id: item.id,
+          textAligns: Array(numLines).fill(newAlign),
+        }
+      });
+      onUpdate(updates as any);
     }
   };
 
@@ -178,14 +186,59 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
 
         <Separator orientation="vertical" className="h-6 mx-1" />
 
+        <div className="relative flex items-center justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-8 h-8 p-0"
+            title="Text Color"
+          >
+            <Palette className="w-4 h-4" style={{ color: commonColor || 'currentColor' }} />
+          </Button>
+          <input
+            type="color"
+            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            value={commonColor || (targetItems[0]?.type === 'title' ? '#ffffff' : '#000000')}
+            onChange={(e) => handleUpdate({ color: e.target.value })}
+          />
+        </div>
+
+        <Separator orientation="vertical" className="h-6 mx-1" />
+
+        {isTitle && (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleToggle('titleShadow', true, false)}
+              className={cn(commonTitleShadow && 'bg-accent')}
+              title="Toggle Shadow"
+            >
+              <Blend className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleToggle('titleOutline', true, false)}
+              className={cn(commonTitleOutline && 'bg-accent')}
+              title="Toggle Outline"
+            >
+              <BoxSelect className="w-4 h-4" />
+            </Button>
+            <Separator orientation="vertical" className="h-6 mx-1" />
+          </>
+        )}
+
         <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => e.preventDefault()} onClick={() => handleFontSizeChange(-1)}>
-                <Minus className="w-4 h-4" />
-            </Button>
-            <span className="text-sm font-medium w-8 text-center">{commonFontSize}</span>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => e.preventDefault()} onClick={() => handleFontSizeChange(1)}>
-                <Plus className="w-4 h-4" />
-            </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => e.preventDefault()} onClick={() => handleFontSizeChange(-1)}>
+            <Minus className="w-4 h-4" />
+          </Button>
+          <span className="text-sm font-medium w-8 text-center">{commonFontSize}</span>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => e.preventDefault()} onClick={() => handleFontSizeChange(1)}>
+            <Plus className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </div>

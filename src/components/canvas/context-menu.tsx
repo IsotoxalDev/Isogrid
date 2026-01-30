@@ -1,7 +1,7 @@
 "use client";
 
 import type { FC } from 'react';
-import { Type, Image, Square, ArrowRight, Trash2, LogIn, PenSquare, ListTodo, Link } from 'lucide-react';
+import { Type, Image, Square, ArrowRight, Trash2, LogIn, PenSquare, ListTodo, Link, Heading, StickyNote } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -10,7 +10,7 @@ import { CanvasItemType, AnyCanvasItem } from '@/lib/types';
 interface ContextMenuProps {
   x: number;
   y: number;
-  onAction: (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow' | 'todo' | 'link'> | 'delete' | 'enter' | 'edit') => void;
+  onAction: (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow' | 'todo' | 'link' | 'title' | 'note'> | 'delete' | 'enter' | 'edit') => void;
   isItemMenu: boolean;
   itemType?: AnyCanvasItem['type'];
   accentColor?: string;
@@ -18,6 +18,8 @@ interface ContextMenuProps {
 
 const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemType, accentColor }) => {
   const menuItems = [
+    { label: 'Add Title', icon: Heading, action: 'title' as const },
+    { label: 'Add Note', icon: StickyNote, action: 'note' as const },
     { label: 'Add Text', icon: Type, action: 'text' as const },
     { label: 'Add Image', icon: Image, action: 'image' as const },
     { label: 'Add Board', icon: Square, action: 'board' as const },
@@ -25,7 +27,7 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
     { label: 'Add Link', icon: Link, action: 'link' as const },
     { label: 'Add Arrow', icon: ArrowRight, action: 'arrow' as const },
   ];
-  
+
   const editItem = { label: 'Edit', icon: PenSquare, action: 'edit' as const };
   const deleteItem = { label: 'Delete', icon: Trash2, action: 'delete' as const };
   const enterBoardItem = { label: 'Enter Board', icon: LogIn, action: 'enter' as const };
@@ -62,50 +64,50 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
         ))}
 
         {isItemMenu && showEditOption && (
-            <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={(e) => {
-                e.stopPropagation();
-                onAction(editItem.action);
-                }}
-            >
-                <editItem.icon className="w-4 h-4 mr-2" />
-                {editItem.label}
-            </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAction(editItem.action);
+            }}
+          >
+            <editItem.icon className="w-4 h-4 mr-2" />
+            {editItem.label}
+          </Button>
         )}
 
         {isItemMenu && showEnterOption && (
-            <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={(e) => {
-                e.stopPropagation();
-                onAction(enterBoardItem.action);
-                }}
-            >
-                <enterBoardItem.icon className="w-4 h-4 mr-2" />
-                {enterBoardItem.label}
-            </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAction(enterBoardItem.action);
+            }}
+          >
+            <enterBoardItem.icon className="w-4 h-4 mr-2" />
+            {enterBoardItem.label}
+          </Button>
         )}
-        
+
         {isItemMenu && (
-            <>
+          <>
             {showSeparator && <Separator className="my-1" />}
-            
+
             <Button
-                variant="ghost"
-                className="w-full justify-start"
-                style={{ color: getDeleteColor() }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAction(deleteItem.action);
-                }}
+              variant="ghost"
+              className="w-full justify-start"
+              style={{ color: getDeleteColor() }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAction(deleteItem.action);
+              }}
             >
-                <deleteItem.icon className="w-4 h-4 mr-2" />
-                {deleteItem.label}
+              <deleteItem.icon className="w-4 h-4 mr-2" />
+              {deleteItem.label}
             </Button>
-            </>
+          </>
         )}
       </Card>
     </div>

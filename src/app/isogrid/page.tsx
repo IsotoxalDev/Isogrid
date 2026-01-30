@@ -32,6 +32,9 @@ import { signOut, onAuthStateChanged, type User } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { nanoid } from 'nanoid';
 import { base64ToBlob } from '@/lib/utils';
+import dynamic from 'next/dynamic';
+
+const NoteEditor = dynamic(() => import('@/components/canvas/note-editor'), { ssr: false });
 
 const INITIAL_ITEMS: CanvasItemData[] = [];
 
@@ -88,6 +91,7 @@ export default function IsogridPage() {
   const [selectedArrowIds, setSelectedArrowIds] = useState<string[]>([]);
 
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingBoardId, setEditingBoardId] = useState<string | null>(null);
   const [activeTextarea, setActiveTextarea] = useState<HTMLTextAreaElement | null>(null);
 
@@ -499,7 +503,7 @@ export default function IsogridPage() {
     rightClickDragInfo.current = { isDragging: false };
   };
 
-  const addItem = (type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo' | 'link'>, position: Point) => {
+  const addItem = (type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo' | 'link' | 'title' | 'note'>, position: Point) => {
     let newItem: CanvasItemData;
     const baseItem = {
       id: nanoid(),
@@ -523,6 +527,27 @@ export default function IsogridPage() {
         width: 300,
         height: 52,
         content: 'https://www.google.com',
+      };
+    } else if (type === 'title') {
+      newItem = {
+        ...baseItem,
+        type,
+        width: 500,
+        height: 100,
+        content: 'New Title',
+        fontSize: 48,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        titleShadow: false,
+        titleOutline: false
+      };
+    } else if (type === 'note') {
+      newItem = {
+        ...baseItem,
+        type,
+        width: 300,
+        height: 300,
+        content: '<h1>New Note</h1><p>Double click to edit...</p>',
       };
     } else {
       newItem = {
@@ -553,7 +578,7 @@ export default function IsogridPage() {
     setContextMenu({ ...contextMenu, show: false });
   }
 
-  const handleContextMenuAction = (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow' | 'todo' | 'link'> | 'delete' | 'enter' | 'edit') => {
+  const handleContextMenuAction = (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow' | 'todo' | 'link' | 'title' | 'note'> | 'delete' | 'enter' | 'edit') => {
     const canvasPos = screenToCanvas({ x: contextMenu.x, y: contextMenu.y });
 
     if (action === 'delete' && contextMenu.itemId) {
@@ -650,7 +675,9 @@ export default function IsogridPage() {
       setHistoryIndex(0);
       setSelectedItemIds([]);
       setSelectedArrowIds([]);
-    } else if (item.type === 'text' || item.type === 'todo' || item.type === 'link') {
+    } else if (item.type === 'note') {
+      setEditingNoteId(item.id);
+    } else if (item.type === 'text' || item.type === 'todo' || item.type === 'link' || item.type === 'title') {
       setEditingItemId(item.id);
     }
   };
@@ -908,7 +935,7 @@ export default function IsogridPage() {
   };
 
   const selectedItems = items.filter(item => selectedItemIds.includes(item.id));
-  const selectedTextItems = selectedItems.filter(item => item.type === 'text');
+  const selectedTextItems = selectedItems.filter(item => item.type === 'text' || item.type === 'title');
 
   if (isLoading || (!currentUser && !isGuest)) {
     return (
@@ -1117,6 +1144,20 @@ export default function IsogridPage() {
           activeTextarea={activeTextarea}
           onTextareaUpdate={handleItemUpdate}
           onBlur={() => setActiveTextarea(null)}
+        />
+      )}
+      {editingNoteId && (
+        <NoteEditor
+          initialContent={items.find(i => i.id === editingNoteId)?.content || ''}
+          initialTitle={items.find(i => i.id === editingNoteId)?.noteTitle || 'Untitled Note'}
+          onSave={(content, title) => {
+            handleItemUpdate({ id: editingNoteId, content, noteTitle: title });
+            // Don't close immediately on auto-save? The interface has a Close button now. 
+            // Wait, handleBack calls onClose. Auto-save calls onSave but we shouldn't close.
+            // The prop is onSave, inside NoteEditor it calls it for auto-save.
+            // We need to keep editingNoteId active.
+          }}
+          onClose={() => setEditingNoteId(null)}
         />
       )}
     </main>

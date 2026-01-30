@@ -4,7 +4,7 @@ export type Point = {
   y: number;
 };
 
-export type CanvasItemType = 'text' | 'image' | 'board' | 'arrow' | 'todo' | 'link';
+export type CanvasItemType = 'text' | 'image' | 'board' | 'arrow' | 'todo' | 'link' | 'title' | 'note';
 
 export type TodoListItem = {
   id: string;
@@ -19,7 +19,7 @@ export type TextDecoration = 'none' | 'underline';
 
 export interface CanvasItemData {
   id: string;
-  type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo' | 'link'>;
+  type: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'todo' | 'link' | 'title' | 'note'>;
   position: Point;
   width: number;
   height: number | 'auto';
@@ -33,10 +33,17 @@ export interface CanvasItemData {
   fontWeight?: FontWeight;
   fontStyle?: FontStyle;
   textDecoration?: TextDecoration;
+  // Title properties
+  titleShadow?: boolean;
+  titleOutline?: boolean;
+  // Common properties
+  color?: string;
+  // Note properties
+  noteTitle?: string;
 }
 
 export interface ArrowData {
-  id:string;
+  id: string;
   type: 'arrow';
   start: Point;
   end: Point;
@@ -53,16 +60,16 @@ export interface ViewState {
 export type GridStyle = 'dots' | 'lines';
 
 export interface BoardSettings {
-    accentColor?: string; // HSL string e.g., "240 5.9% 10%"
-    showGrid?: boolean;
-    gridStyle?: GridStyle;
-    gridOpacity?: number;
-    vignetteIntensity?: number;
-    defaultOpacity?: number;
-    defaultBackgroundBlur?: number;
+  accentColor?: string; // HSL string e.g., "240 5.9% 10%"
+  showGrid?: boolean;
+  gridStyle?: GridStyle;
+  gridOpacity?: number;
+  vignetteIntensity?: number;
+  defaultOpacity?: number;
+  defaultBackgroundBlur?: number;
 }
 
 export interface Board {
-    id: string;
-    name: string;
+  id: string;
+  name: string;
 }
