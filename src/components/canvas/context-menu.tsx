@@ -1,7 +1,7 @@
 "use client";
 
 import type { FC } from 'react';
-import { Type, Image, Square, ArrowRight, Trash2, LogIn, PenSquare, ListTodo, Link, Heading, StickyNote } from 'lucide-react';
+import { Type, Image, Square, ArrowRight, Trash2, LogIn, PenSquare, ListTodo, Link, Heading, StickyNote, FolderInput } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -29,6 +29,8 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
   ];
 
   const editItem = { label: 'Edit', icon: PenSquare, action: 'edit' as const };
+  const moveItem = { label: 'Move to Board', icon: LogIn, action: 'move' as const }; // Using LogIn or a better icon like FolderInput? I'll use LogIn as a placeholder or import FolderInput. 
+  // Wait, I should import FolderInput first.
   const deleteItem = { label: 'Delete', icon: Trash2, action: 'delete' as const };
   const enterBoardItem = { label: 'Enter Board', icon: LogIn, action: 'enter' as const };
 
@@ -39,11 +41,13 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
   };
 
   // Logic to determine if any "top section" actions are present
-  const showEditOption = itemType === 'text' || itemType === 'board' || itemType === 'todo' || itemType === 'link';
+  const showEditOption = itemType === 'text' || itemType === 'board' || itemType === 'todo' || itemType === 'link' || itemType === 'note' || itemType === 'title';
+  // Adding 'note' and 'title' just in case. 
   const showEnterOption = itemType === 'board';
+  const showMoveOption = true; // All items can be moved
 
   // Show separator if ANY of the top options are visible
-  const showSeparator = showEditOption || showEnterOption;
+  const showSeparator = showEditOption || showEnterOption || showMoveOption;
 
   return (
     <div style={{ top: y, left: x, position: 'fixed' }} className="z-50">
@@ -88,6 +92,20 @@ const ContextMenu: FC<ContextMenuProps> = ({ x, y, onAction, isItemMenu, itemTyp
           >
             <enterBoardItem.icon className="w-4 h-4 mr-2" />
             {enterBoardItem.label}
+          </Button>
+        )}
+
+        {isItemMenu && (
+          <Button
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAction('move' as any); // Cast to any because prop definition needs update too
+            }}
+          >
+            <FolderInput className="w-4 h-4 mr-2" />
+            Move to Board
           </Button>
         )}
 

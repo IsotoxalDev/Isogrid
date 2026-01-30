@@ -33,6 +33,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { nanoid } from 'nanoid';
 import { base64ToBlob } from '@/lib/utils';
 import dynamic from 'next/dynamic';
+import MoveToBoardDialog from '@/components/canvas/move-to-board-dialog';
 
 const NoteEditor = dynamic(() => import('@/components/canvas/note-editor'), { ssr: false });
 
@@ -98,6 +99,7 @@ export default function IsogridPage() {
 
   const [draggedTodo, setDraggedTodo] = useState<DraggedTodoInfo | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [moveDialog, setMoveDialog] = useState<{ show: boolean; itemId: string | null }>({ show: false, itemId: null });
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -583,6 +585,21 @@ export default function IsogridPage() {
     setContextMenu({ ...contextMenu, show: false });
   }
 
+  const handleMoveItem = (targetBoardId: string) => {
+    if (!moveDialog.itemId) return;
+
+    const itemId = moveDialog.itemId;
+    const targetId = targetBoardId === 'root' ? null : targetBoardId;
+
+    updateState(
+      items.map(item => item.id === itemId ? { ...item, parentId: targetId } : item),
+      arrows
+    );
+
+    setMoveDialog({ show: false, itemId: null });
+    toast({ title: "Item moved successfully" });
+  };
+
   const handleContextMenuAction = (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow' | 'todo' | 'link' | 'title' | 'note'> | 'delete' | 'enter' | 'edit') => {
     const canvasPos = screenToCanvas({ x: contextMenu.x, y: contextMenu.y });
 
@@ -606,6 +623,12 @@ export default function IsogridPage() {
     }
     if (action === 'edit' && contextMenu.itemId) {
       setEditingItemId(contextMenu.itemId);
+      setContextMenu({ ...contextMenu, show: false });
+      return;
+    }
+
+    if (action === 'move' && contextMenu.itemId) {
+      setMoveDialog({ show: true, itemId: contextMenu.itemId });
       setContextMenu({ ...contextMenu, show: false });
       return;
     }
@@ -1070,6 +1093,14 @@ export default function IsogridPage() {
         style={{ boxShadow: `inset 0 0 10vw 5vw hsl(0 0% 0% / ${vignetteIntensity})` }}
       />
       {selectionBox && selectionBox.visible && <SelectionBox start={selectionBox.start} end={selectionBox.end} />}
+
+      <MoveToBoardDialog
+        isOpen={moveDialog.show}
+        onClose={() => setMoveDialog({ show: false, itemId: null })}
+        onMove={handleMoveItem}
+        boards={items.filter(item => item.type === 'board').map(b => ({ id: b.id, name: b.content }))}
+        currentBoardId={currentBoardId}
+      />
 
       {/* User Greeting */}
       <div className="absolute top-8 left-8 z-10 text-white font-bold text-3xl">
