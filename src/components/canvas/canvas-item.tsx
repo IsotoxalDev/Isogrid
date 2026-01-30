@@ -32,6 +32,7 @@ interface CanvasItemProps {
   onDragLeave: () => void;
   settings: BoardSettings;
   onTextareaFocus?: (textarea: HTMLTextAreaElement) => void;
+  isGuest: boolean;
 }
 
 const CanvasItem: FC<CanvasItemProps> = ({
@@ -51,6 +52,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
   onDragLeave,
   settings,
   onTextareaFocus,
+  isGuest,
 }) => {
   const dragStartPos = useRef<Point>({ x: 0, y: 0 });
   const itemStartPos = useRef<Point>({ x: 0, y: 0 });
@@ -190,6 +192,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
       const img = new window.Image();
 
       let newHeight = item.height;
+      let contentUrl = '';
 
       // Wrap image loading in a promise to ensure we have dimensions
       await new Promise<void>((resolve) => {
@@ -209,24 +212,36 @@ const CanvasItem: FC<CanvasItemProps> = ({
         img.src = localUrl;
       });
 
-      // 2. Upload to Firebase
-      const storageRef = ref(storage, `canvas-images/${item.id}/${Date.now()}_${file.name}`);
+      if (isGuest) {
+        // For guest users, convert file to Base64 
+        contentUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve(reader.result as string);
+          }
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
 
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
+      } else {
+        // 2. Upload to Firebase (Authenticated Users)
+        const storageRef = ref(storage, `canvas-images/${item.id}/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        contentUrl = await getDownloadURL(snapshot.ref);
+      }
 
-      // 3. Update with real Firebase URL (This persists the data)
-      // Important: We call onUpdate once with the cloud URL only
+      // 3. Update with the appropriate URL (Data URL or Firebase URL)
+      // This persists the data
       onUpdate({
         id: item.id,
-        content: downloadURL,
+        content: contentUrl,
         width: item.width,
         height: newHeight
       });
 
     } catch (error) {
-      console.error("Firebase upload failed:", error);
-      alert("Failed to upload image. Please check your connection or permissions.");
+      console.error("Image upload/processing failed:", error);
+      alert("Failed to process image. Please check your connection or try another file.");
     } finally {
       setIsUploading(false);
       // Reset file input

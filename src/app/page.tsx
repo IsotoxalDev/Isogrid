@@ -14,11 +14,11 @@ const GRID_SIZE = 40;
 export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  
+
   // Refs for direct DOM manipulation on scroll
   const gridRef = useRef(null);
   const blobsRef = useRef(null); // New ref for the glow container
-  
+
   const router = useRouter();
 
   // Handle Authentication Check
@@ -49,7 +49,7 @@ export default function HomePage() {
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -69,7 +69,7 @@ export default function HomePage() {
       <div className="fixed inset-0 -z-20 bg-[#151515]" />
 
       {/* Animated Background Blobs - Added Ref and styles for smooth movement */}
-      <div 
+      <div
         ref={blobsRef}
         className="fixed inset-0 -z-10 overflow-hidden pointer-events-none"
         style={{ willChange: 'transform' }} // Optimization hint for browser
@@ -80,7 +80,7 @@ export default function HomePage() {
       </div>
 
       {/* Grid Background - Position updated via Ref */}
-      <div 
+      <div
         ref={gridRef}
         className="fixed inset-0 -z-10"
         style={{
@@ -94,7 +94,7 @@ export default function HomePage() {
       />
 
       {/* Vignette Shadow */}
-      <div 
+      <div
         className="fixed inset-0 -z-10 pointer-events-none"
         style={{
           background: `radial-gradient(ellipse at center, transparent 0%, rgba(21, 21, 21, 0.7) 100%)`,
@@ -105,10 +105,10 @@ export default function HomePage() {
       <nav className="relative z-10 border-b border-[#c5d86d]/10 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
-            <Image 
-              src="/icon.svg" 
-              alt="Isogrid" 
-              width={32} 
+            <Image
+              src="/icon.svg"
+              alt="Isogrid"
+              width={32}
               height={32}
               className="group-hover:opacity-80 transition-opacity"
             />
@@ -126,6 +126,14 @@ export default function HomePage() {
               </Link>
             ) : (
               <>
+                <Link href="/isogrid">
+                  <Button
+                    variant="ghost"
+                    className="text-gray-300 hover:text-white hover:bg-white/10"
+                  >
+                    Try App
+                  </Button>
+                </Link>
                 <Link href="/login">
                   <Button
                     variant="outline"
@@ -168,12 +176,12 @@ export default function HomePage() {
               </Link>
             ) : (
               <>
-                <Link href="/signup">
+                <Link href="/isogrid">
                   <Button
                     size="lg"
                     className="bg-[#c5d86d] text-[#151515] hover:bg-[#c5d86d]/90 font-semibold text-base px-8"
                   >
-                    Get Started Free
+                    Try App Now
                     <ChevronRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
@@ -331,23 +339,23 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="relative z-10 border-t border-[#c5d86d]/10 mt-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                                          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-                                            <div className="flex items-center gap-2">
-                                              <Image 
-                                                src="/icon.svg" 
-                                                alt="Isogrid" 
-                                                width={32} 
-                                                height={32}
-                                              />
-                                              <span className="text-white font-semibold">Isogrid</span>
-                                            </div>
-                                            <Link href="https://github.com/IsotoxalDev/Isogrid" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-gray-400 hover:text-[#c5d86d] transition-colors">
-                                              <Github className="w-4 h-4" />
-                                              GitHub
-                                            </Link>
-                                                        <p className="text-gray-400 text-sm">
-                                                          © 2026 Isogrid.
-                                                        </p>                                          </div>        </div>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <Image
+                src="/icon.svg"
+                alt="Isogrid"
+                width={32}
+                height={32}
+              />
+              <span className="text-white font-semibold">Isogrid</span>
+            </div>
+            <Link href="https://github.com/IsotoxalDev/Isogrid" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-gray-400 hover:text-[#c5d86d] transition-colors">
+              <Github className="w-4 h-4" />
+              GitHub
+            </Link>
+            <p className="text-gray-400 text-sm">
+              © 2026 Isogrid.
+            </p>                                          </div>        </div>
       </footer>
     </main>
   );

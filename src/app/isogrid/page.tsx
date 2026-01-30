@@ -27,9 +27,11 @@ import SelectionBox from '@/components/canvas/selection-box';
 import InteractiveArrow from '@/components/canvas/interactive-arrow';
 import { Input } from '@/components/ui/input';
 import FormattingToolbar from '@/components/canvas/formatting-toolbar';
-import { auth, saveCanvasData, loadCanvasData } from '@/lib/firebase';
+import { auth, saveCanvasData, loadCanvasData, storage } from '@/lib/firebase';
 import { signOut, onAuthStateChanged, type User } from 'firebase/auth';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { nanoid } from 'nanoid';
+import { base64ToBlob } from '@/lib/utils';
 
 const INITIAL_ITEMS: CanvasItemData[] = [];
 
@@ -95,6 +97,7 @@ export default function IsogridPage() {
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const isPanning = useRef(false);
@@ -111,24 +114,121 @@ export default function IsogridPage() {
 
   // --- Data Persistence ---
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user && user.emailVerified) {
-        setCurrentUser(user);
-        const savedData = await loadCanvasData(user.uid);
-        if (savedData) {
-          setItems(savedData.items || []);
-          setArrows(savedData.arrows || []);
-          setSettings(savedData.settings || INITIAL_SETTINGS);
-        }
-        setHistory([{ items: savedData?.items || [], arrows: savedData?.arrows || [], settings: savedData?.settings || INITIAL_SETTINGS }]);
-        setHistoryIndex(0);
-      } else {
-        router.push('/login');
-      }
+    // Safety timeout in case auth hangs
+    const timeoutId = setTimeout(() => {
+      console.warn("Auth check timed out, forcing guest mode");
+      setIsGuest(true);
       setIsLoading(false);
+      toast({
+        title: "Connection slow",
+        description: "Loading in guest mode. Your data will sync when connection improves.",
+        duration: 5000,
+      });
+    }, 5000);
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      clearTimeout(timeoutId);
+      try {
+        if (user && user.emailVerified) {
+          setCurrentUser(user);
+          setIsGuest(false);
+
+          // Check for guest data to migrate
+          const guestDataString = localStorage.getItem('isogrid-guest-data');
+          if (guestDataString) {
+            try {
+              const guestData = JSON.parse(guestDataString);
+
+              // Migrate local images to Firebase Storage
+              const migratedItems = await Promise.all((guestData.items || []).map(async (item: CanvasItemData) => {
+                if (item.type === 'image' && item.content?.startsWith('data:image')) {
+                  try {
+                    const mimeType = item.content.split(';')[0].split(':')[1];
+                    const blob = base64ToBlob(item.content, mimeType);
+                    const storageRef = ref(storage, `canvas-images/${item.id}/${Date.now()}_migrated`);
+                    const snapshot = await uploadBytes(storageRef, blob);
+                    const downloadURL = await getDownloadURL(snapshot.ref);
+                    return { ...item, content: downloadURL };
+                  } catch (error) {
+                    console.error("Failed to migrate image for item", item.id, error);
+                    return item; // Keep local data if upload fails
+                  }
+                }
+                return item;
+              }));
+
+              // Load existing remote data
+              const remoteData = await loadCanvasData(user.uid);
+
+              // Merge data
+              const mergedItems = [...(remoteData?.items || []), ...migratedItems];
+              const mergedArrows = [...(remoteData?.arrows || []), ...(guestData.arrows || [])];
+              const mergedSettings = { ...(remoteData?.settings || INITIAL_SETTINGS), ...(guestData.settings || {}) };
+
+              // Save merged data
+              await saveCanvasData(user.uid, { items: mergedItems, arrows: mergedArrows, settings: mergedSettings });
+
+              // Update state
+              setItems(mergedItems);
+              setArrows(mergedArrows);
+              setSettings(mergedSettings);
+              setHistory([{ items: mergedItems, arrows: mergedArrows, settings: mergedSettings }]);
+
+              // Clear guest data
+              localStorage.removeItem('isogrid-guest-data');
+              toast({ title: "Guest data migrated successfully!" });
+            } catch (e) {
+              console.error("Error migrating guest data:", e);
+              // Fallback to loading remote data only if migration fails
+              const savedData = await loadCanvasData(user.uid);
+              if (savedData) {
+                setItems(savedData.items || []);
+                setArrows(savedData.arrows || []);
+                setSettings(savedData.settings || INITIAL_SETTINGS);
+                setHistory([{ items: savedData.items || [], arrows: savedData.arrows || [], settings: savedData.settings || INITIAL_SETTINGS }]);
+              }
+            }
+          } else {
+            // Normal load
+            const savedData = await loadCanvasData(user.uid);
+            if (savedData) {
+              setItems(savedData.items || []);
+              setArrows(savedData.arrows || []);
+              setSettings(savedData.settings || INITIAL_SETTINGS);
+            }
+            setHistory([{ items: savedData?.items || [], arrows: savedData?.arrows || [], settings: savedData?.settings || INITIAL_SETTINGS }]);
+          }
+          setHistoryIndex(0);
+        } else {
+          // Guest Mode
+          setIsGuest(true);
+          const guestDataString = localStorage.getItem('isogrid-guest-data');
+          if (guestDataString) {
+            try {
+              const guestData = JSON.parse(guestDataString);
+              setItems(guestData.items || []);
+              setArrows(guestData.arrows || []);
+              setSettings(guestData.settings || INITIAL_SETTINGS);
+              setHistory([{ items: guestData.items || [], arrows: guestData.arrows || [], settings: guestData.settings || INITIAL_SETTINGS }]);
+              setHistoryIndex(0);
+            } catch (e) {
+              console.error("Error loading guest data:", e);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error in auth state change:", error);
+        toast({
+          variant: "destructive",
+          title: "Error loading data",
+          description: "Please try refreshing the page."
+        });
+      } finally {
+        setIsLoading(false);
+      }
     });
     return () => unsubscribe();
-  }, [router]);
+  }, [router, toast]);
 
   const useDebouncedEffect = (effect: () => void, deps: any[], delay: number) => {
     useEffect(() => {
@@ -139,10 +239,14 @@ export default function IsogridPage() {
   };
 
   useDebouncedEffect(() => {
-    if (currentUser && !isLoading) {
-      saveCanvasData(currentUser.uid, { items, arrows, settings });
+    if (!isLoading) {
+      if (currentUser) {
+        saveCanvasData(currentUser.uid, { items, arrows, settings });
+      } else if (isGuest) {
+        localStorage.setItem('isogrid-guest-data', JSON.stringify({ items, arrows, settings }));
+      }
     }
-  }, [items, arrows, settings, currentUser, isLoading], 1000);
+  }, [items, arrows, settings, currentUser, isLoading, isGuest], 1000);
 
   // --- END Data Persistence ---
 
@@ -806,7 +910,7 @@ export default function IsogridPage() {
   const selectedItems = items.filter(item => selectedItemIds.includes(item.id));
   const selectedTextItems = selectedItems.filter(item => item.type === 'text');
 
-  if (isLoading || !currentUser) {
+  if (isLoading || (!currentUser && !isGuest)) {
     return (
       <main className="w-screen h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -923,6 +1027,7 @@ export default function IsogridPage() {
               onDragLeave={() => setDropTargetId(null)}
               settings={settings}
               onTextareaFocus={setActiveTextarea}
+              isGuest={isGuest}
             />
           ))}
         </div>
@@ -938,8 +1043,9 @@ export default function IsogridPage() {
       <div className="absolute top-8 left-8 z-10 text-white font-bold text-3xl">
         {currentUser?.displayName
           ? `Hi ${currentUser.displayName.split(' ')[0]}`
-          : `Welcome ${currentUser?.email?.split('@')[0]}`
-        }
+          : currentUser?.email
+            ? `Welcome ${currentUser.email.split('@')[0]}`
+            : 'Welcome'}
       </div>
 
       {/* Top Right Navbar */}
@@ -996,6 +1102,7 @@ export default function IsogridPage() {
                   onExport={handleExport}
                   onImport={handleImportClick}
                   onSignOut={handleSignOut}
+                  isGuest={isGuest}
                 />
               </div>
             </div>
