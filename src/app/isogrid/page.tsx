@@ -568,6 +568,11 @@ export default function IsogridPage() {
     }
     updateState(prevItems => [...prevItems, newItem], arrows);
     setContextMenu({ ...contextMenu, show: false });
+
+    // Auto-enter edit mode for specific types
+    if (['text', 'title', 'link', 'todo', 'note'].includes(type)) {
+      setEditingItemId(newItem.id);
+    }
   };
 
   const deleteItem = (itemId: string) => {

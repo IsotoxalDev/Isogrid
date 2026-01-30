@@ -63,6 +63,30 @@ const CanvasItem: FC<CanvasItemProps> = ({
   const cardTitleRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Auto-select text on edit
+  useEffect(() => {
+    if (isEditing) {
+      // Small timeout to ensure DOM is ready and focus works
+      const timer = setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.select();
+        } else if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.select();
+        } else if (cardTitleRef.current) {
+          cardTitleRef.current.focus();
+          const range = document.createRange();
+          range.selectNodeContents(cardTitleRef.current);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      }, 10);
+      return () => clearTimeout(timer);
+    }
+  }, [isEditing]);
+
   // Loading state for upload
   const [isUploading, setIsUploading] = useState(false);
 
@@ -513,12 +537,52 @@ const CanvasItem: FC<CanvasItemProps> = ({
         return (
           <>
             <CardHeader className="py-3 px-4 shrink-0">
-              <CardTitle className="text-lg truncate">
+              <CardTitle
+                ref={cardTitleRef}
+                contentEditable={isEditing}
+                suppressContentEditableWarning
+                className={cn("outline-none rounded-sm px-1 text-lg truncate", isEditing && "ring-2 ring-primary no-drag overflow-visible text-clip")}
+                onMouseDown={(e) => {
+                  if (isEditing) e.stopPropagation();
+                  // Don't propagate double click on header to avoid closing/reopening? 
+                  // Actually double click on header should probably just do nothing if already editing
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  // If we double click the title, we probably want to open the FULL editor, 
+                  // but currently we are in inline edit mode. 
+                  // User "edit the title of the note" on add.
+                  // Double clicking usually toggles editing. 
+                  if (!isEditing) onDoubleClick();
+                }}
+                onBlur={(e) => {
+                  const newTitle = e.currentTarget.textContent || 'Untitled Note';
+                  if (newTitle !== item.noteTitle) {
+                    onUpdate({ id: item.id, noteTitle: newTitle });
+                  }
+                  // We don't call handleBlur() here because that clears editing mode?
+                  // Yes, usually handleBlur() calls onEditEnd().
+                  onEditEnd();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }
+                }}
+              >
                 {item.noteTitle || 'Untitled Note'}
               </CardTitle>
             </CardHeader>
             <Separator />
-            <CardContent className="flex-1 overflow-hidden p-4 relative pointer-events-none select-none">
+            <CardContent
+              className="flex-1 overflow-hidden p-4 relative pointer-events-none select-none"
+              // On double click content, open full editor
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                onDoubleClick();
+              }}
+            >
               <div
                 className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2"
                 dangerouslySetInnerHTML={{ __html: item.content }}
