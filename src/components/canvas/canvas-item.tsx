@@ -164,28 +164,109 @@ const CanvasItem: FC<CanvasItemProps> = ({
     };
     itemStartPos.current = item.position;
 
+    // Calculate aspect ratio at start of resize
+    const aspectRatio = resizeStartSize.current.width / resizeStartSize.current.height;
+
     const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
       const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
       const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
 
       const newUpdate: Partial<CanvasItemData> = {};
 
-      if (direction.includes('e')) {
-        newUpdate.width = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
-      }
-      if (direction.includes('w')) {
-        newUpdate.width = Math.max(MIN_SIZE, resizeStartSize.current.width - dx);
-        newUpdate.position = { ...item.position, x: itemStartPos.current.x + dx };
-      }
-      if (direction.includes('s')) {
-        if (item.type !== 'link') {
-          newUpdate.height = Math.max(MIN_SIZE, resizeStartSize.current.height + dy);
+      if (item.type === 'image') {
+        // --- Aspect Ratio Locked Resize for Images ---
+
+        // We need to decide which dimension drives the resize.
+        // For corner handles (ne, nw, se, sw) and side handles (e, w), let's prioritize width changes primarily,
+        // unless it's strictly top/bottom handles (n, s) where we might prioritize height.
+        // Actually, a common strategy is:
+        // - N, S: Calculate height first, then width.
+        // - E, W, Corners: Calculate width first, then height.
+
+        let newWidth = resizeStartSize.current.width;
+        let newHeight = resizeStartSize.current.height;
+        let newX = itemStartPos.current.x;
+        let newY = itemStartPos.current.y;
+
+        // Check if we are resizing strictly vertically
+        const isVerticalOnly = direction === 'n' || direction === 's';
+
+        if (isVerticalOnly) {
+          // Drive by height
+          if (direction === 's') {
+            newHeight = Math.max(MIN_SIZE, resizeStartSize.current.height + dy);
+          } else if (direction === 'n') {
+            newHeight = Math.max(MIN_SIZE, resizeStartSize.current.height - dy);
+            // Verify if we hit min size, if so, we shouldn't move y more than allowed?
+            // Actually, strict math is: dHeight = oldH - newH. newY = oldY + dHeight
+            // But simpler: newY = oldY + (oldH - newH)
+            // Let's rely on the calculated newHeight.
+          }
+          newWidth = newHeight * aspectRatio;
+
+          // If 'n', we need to adjust Y based on the NEW height
+          if (direction === 'n') {
+            newY = itemStartPos.current.y + (resizeStartSize.current.height - newHeight);
+          }
+          // We might also want to center the width expansion if it's strictly vertical? 
+          // Standard behavior usually expands from center or left. 
+          // Let's keep it expanding from center for vertical handles?
+          // OR: just expand to the right (simple) or keep center. 
+          // Most editors: dragging N/S changes height, and width expands from center.
+          // Let's try expanding width from center for better UX on N/S.
+          if (isVerticalOnly) {
+            newX = itemStartPos.current.x - (newWidth - resizeStartSize.current.width) / 2;
+          }
+
+        } else {
+          // Drive by width (E, W, NE, NW, SE, SW)
+          // Logic for E/W/Corners
+          if (direction.includes('e')) {
+            newWidth = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
+          } else if (direction.includes('w')) {
+            newWidth = Math.max(MIN_SIZE, resizeStartSize.current.width - dx);
+          }
+
+          // Check for NE/NW/SE/SW specific interactions where dy might be dominant?
+          // Usually taking the larger delta or specific axis is better, but Width-driving is consistent.
+
+          newHeight = newWidth / aspectRatio;
+
+          // Adjust X if 'w' involved
+          if (direction.includes('w')) {
+            newX = itemStartPos.current.x + (resizeStartSize.current.width - newWidth);
+          }
+
+          // Adjust Y if 'n' involved (for corners)
+          if (direction.includes('n')) {
+            newY = itemStartPos.current.y + (resizeStartSize.current.height - newHeight);
+          }
         }
-      }
-      if (direction.includes('n')) {
-        if (item.type !== 'link') {
-          newUpdate.height = Math.max(MIN_SIZE, resizeStartSize.current.height - dy);
-          newUpdate.position = { ...(newUpdate.position || item.position), y: itemStartPos.current.y + dy };
+
+        newUpdate.width = newWidth;
+        newUpdate.height = newHeight;
+        newUpdate.position = { x: newX, y: newY };
+
+      } else {
+        // --- Standard Free Resize for Other Items ---
+        if (direction.includes('e')) {
+          newUpdate.width = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
+        }
+        if (direction.includes('w')) {
+          newUpdate.width = Math.max(MIN_SIZE, resizeStartSize.current.width - dx);
+          newUpdate.position = { ...item.position, x: itemStartPos.current.x + dx };
+        }
+        if (direction.includes('s')) {
+          // Link items usually don't have variable height in this implementation or should be careful
+          if (item.type !== 'link') {
+            newUpdate.height = Math.max(MIN_SIZE, resizeStartSize.current.height + dy);
+          }
+        }
+        if (direction.includes('n')) {
+          if (item.type !== 'link') {
+            newUpdate.height = Math.max(MIN_SIZE, resizeStartSize.current.height - dy);
+            newUpdate.position = { ...(newUpdate.position || item.position), y: itemStartPos.current.y + dy };
+          }
         }
       }
 
