@@ -105,7 +105,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
 
   useEffect(() => {
     if (isEditing) {
-      if (item.type === 'text' && textareaRef.current) {
+      if ((item.type === 'text' || item.type === 'title') && textareaRef.current) {
         textareaRef.current.focus();
         textareaRef.current.select();
         onTextareaFocus?.(textareaRef.current);
@@ -256,7 +256,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
   // ----------------------------
 
   const cardStyle: React.CSSProperties = {};
-  if (item.type !== 'image') {
+  if (item.type !== 'image' && item.type !== 'title') {
     cardStyle.backgroundColor = `hsl(var(--card) / ${settings.defaultOpacity ?? 1})`;
     if ((settings.defaultBackgroundBlur ?? 0) > 0) {
       cardStyle.backdropFilter = `blur(${settings.defaultBackgroundBlur}px)`;
@@ -300,6 +300,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
           fontWeight: item.fontWeight || 'normal',
           fontStyle: item.fontStyle || 'normal',
           textDecoration: item.textDecoration || 'none',
+          color: item.color,
         };
 
         if (isEditing) {
@@ -476,6 +477,57 @@ const CanvasItem: FC<CanvasItemProps> = ({
             </CardContent>
           </>
         );
+      case 'title':
+        const titleStyle: React.CSSProperties = {
+          fontSize: item.fontSize ? `${item.fontSize}px` : '48px',
+          fontWeight: item.fontWeight || 'bold',
+          fontStyle: item.fontStyle || 'normal',
+          textDecoration: item.textDecoration || 'none',
+          textShadow: item.titleShadow ? '4px 4px 0px rgba(0,0,0,0.5)' : 'none',
+          WebkitTextStroke: item.titleOutline ? '2px rgba(0,0,0,0.5)' : '0px transparent', // Use 0px transparent instead of none to maybe help reset? Or just 0px.
+          paintOrder: 'stroke fill',
+          color: item.color || 'white',
+          lineHeight: 1.1,
+        };
+
+        if (isEditing) {
+          return (
+            <Textarea
+              ref={textareaRef}
+              value={item.content}
+              onChange={(e) => onUpdate({ id: item.id, content: e.target.value })}
+              onBlur={handleBlur}
+              className="w-full h-full bg-transparent border-0 resize-none focus:ring-0 focus-visible:ring-offset-0 focus-visible:ring-0 p-0 overflow-hidden"
+              style={{ ...titleStyle, textAlign: item.textAlign || 'center' }}
+            />
+          );
+        }
+
+        return (
+          <div className="w-full h-full flex items-center justify-center p-2 whitespace-pre-wrap" style={{ ...titleStyle, textAlign: item.textAlign || 'center' }}>
+            {item.content}
+          </div>
+        );
+      case 'note':
+        // Safe preview of note content with title header
+        return (
+          <>
+            <CardHeader className="py-3 px-4 shrink-0">
+              <CardTitle className="text-lg truncate">
+                {item.noteTitle || 'Untitled Note'}
+              </CardTitle>
+            </CardHeader>
+            <Separator />
+            <CardContent className="flex-1 overflow-hidden p-4 relative pointer-events-none select-none">
+              <div
+                className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2"
+                dangerouslySetInnerHTML={{ __html: item.content }}
+              />
+              {/* Gradient overlay to indicate scroll/infinity */}
+              <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent" />
+            </CardContent>
+          </>
+        );
       default:
         return null;
     }
@@ -508,6 +560,8 @@ const CanvasItem: FC<CanvasItemProps> = ({
         className={cn(
           "w-full h-full overflow-hidden transition-colors duration-200 rounded-lg shadow-md flex flex-col",
           item.type === 'image' && 'p-0 border-0',
+          item.type === 'title' && 'bg-transparent border-none shadow-none',
+          item.type === 'note' && 'bg-card text-card-foreground',
         )}
       >
         {renderContent()}
