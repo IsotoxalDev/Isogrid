@@ -52,27 +52,27 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
   };
-  
+
   const dx = arrow.end.x - arrow.start.x;
   const dy = arrow.end.y - arrow.start.y;
   const length = Math.sqrt(dx * dx + dy * dy);
 
   let endX = arrow.end.x;
   let endY = arrow.end.y;
-  
+
   if (length > 0) {
     const unitDx = dx / length;
     const unitDy = dy / length;
-  
-    endX = arrow.end.x - unitDx * 10; 
+
+    endX = arrow.end.x - unitDx * 10;
     endY = arrow.end.y - unitDy * 10;
   }
 
 
   return (
-    <g data-arrow-id={arrow.id} 
-       onClick={(e) => latestProps.current.onClick(e)}
-       style={{ cursor: 'pointer' }}>
+    <g data-arrow-id={arrow.id}
+      onClick={(e) => latestProps.current.onClick(e)}
+      style={{ cursor: 'pointer' }}>
       <line
         x1={arrow.start.x}
         y1={arrow.start.y}
@@ -89,16 +89,16 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
         y2={arrow.end.y}
         stroke="transparent"
         strokeWidth={LINE_CLICK_WIDTH}
-        style={{ pointerEvents: 'stroke' }}
+        style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
       />
-      
+
       {isSelected && (
         <>
           <circle
             cx={arrow.start.x}
             cy={arrow.start.y}
             r={HANDLE_SIZE / zoom}
-            fill="hsl(var(--background))"
+            fill="hsl(var(--primary))"
             stroke="hsl(var(--ring))"
             strokeWidth={2 / zoom}
             style={{ pointerEvents: 'none' }}
@@ -108,7 +108,7 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
             cy={arrow.start.y}
             r={HANDLE_CLICK_RADIUS / zoom}
             fill="transparent"
-            style={{ cursor: 'grab' }}
+            style={{ cursor: 'grab', pointerEvents: 'auto' }}
             onMouseDown={(e) => handleHandleMouseDown(e, 'start')}
             className="active:cursor-grabbing"
           />
@@ -117,7 +117,7 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
             cx={arrow.end.x}
             cy={arrow.end.y}
             r={HANDLE_SIZE / zoom}
-            fill="hsl(var(--background))"
+            fill="hsl(var(--accent))"
             stroke="hsl(var(--ring))"
             strokeWidth={2 / zoom}
             style={{ pointerEvents: 'none' }}
@@ -127,7 +127,7 @@ export default function InteractiveArrow({ arrow, zoom, onUpdate, onClick, isSel
             cy={arrow.end.y}
             r={HANDLE_CLICK_RADIUS / zoom}
             fill="transparent"
-            style={{ cursor: 'grab' }}
+            style={{ cursor: 'grab', pointerEvents: 'auto' }}
             onMouseDown={(e) => handleHandleMouseDown(e, 'end')}
             className="active:cursor-grabbing"
           />
