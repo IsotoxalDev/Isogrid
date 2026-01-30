@@ -22,7 +22,7 @@ export function getArrowPath(
 
   const startRect = { ...startItem.position, width: startItem.width, height: startItem.height };
   const endRect = { ...endItem.position, width: endItem.width, height: endItem.height };
-  
+
   const startPoint = getIntersection(startCenter, endCenter, startRect);
   let endPoint = getIntersection(endCenter, startCenter, endRect);
 
@@ -95,4 +95,14 @@ function lineIntersect(p1: Point, p2: Point, p3: Point, p4: Point): Point | null
   }
 
   return null;
+}
+
+export function base64ToBlob(base64: string, mimeType: string = '') {
+  const byteString = atob(base64.split(',')[1]);
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: mimeType });
 }

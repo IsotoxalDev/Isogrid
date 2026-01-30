@@ -13,13 +13,14 @@ import { LogOut } from 'lucide-react';
 
 
 interface SettingsPopoverProps {
-  settings: BoardSettings;
-  onSettingsChange: (settings: Partial<BoardSettings>) => void;
-  zoom: number;
-  onZoomChange: (newZoom: number) => void;
-  onExport: () => void;
-  onImport: () => void;
-  onSignOut: () => void;
+    settings: BoardSettings;
+    onSettingsChange: (settings: Partial<BoardSettings>) => void;
+    zoom: number;
+    onZoomChange: (newZoom: number) => void;
+    onExport: () => void;
+    onImport: () => void;
+    onSignOut: () => void;
+    isGuest?: boolean;
 }
 
 const PRESET_COLORS = [
@@ -33,8 +34,8 @@ const PRESET_COLORS = [
     "326 55% 69%", // #D88CB5
 ];
 
-const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange, zoom, onZoomChange, onExport, onImport, onSignOut }) => {
-  
+const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange, zoom, onZoomChange, onExport, onImport, onSignOut, isGuest }) => {
+
     const handleColorChange = (newColor: string) => {
         onSettingsChange({ accentColor: newColor });
     };
@@ -42,45 +43,45 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
     return (
         <div className="grid gap-4">
             <div>
-              <h4 className="font-medium leading-none">Default Component Settings</h4>
-              <div className="grid gap-2 mt-4">
-                <div className="flex items-center justify-between">
-                    <Label htmlFor="default-opacity">Opacity</Label>
-                    <span className="text-xs text-muted-foreground">{Math.round((settings.defaultOpacity ?? 1) * 100)}%</span>
+                <h4 className="font-medium leading-none">Default Component Settings</h4>
+                <div className="grid gap-2 mt-4">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="default-opacity">Opacity</Label>
+                        <span className="text-xs text-muted-foreground">{Math.round((settings.defaultOpacity ?? 1) * 100)}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Slider
+                            id="default-opacity"
+                            min={0}
+                            max={1}
+                            step={0.1}
+                            value={[settings.defaultOpacity ?? 1]}
+                            onValueChange={(value) => onSettingsChange({ defaultOpacity: value[0] })}
+                        />
+                        <Button variant="ghost" size="sm" onClick={() => onSettingsChange({ defaultOpacity: 1 })}>Reset</Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Slider
-                      id="default-opacity"
-                      min={0}
-                      max={1}
-                      step={0.1}
-                      value={[settings.defaultOpacity ?? 1]}
-                      onValueChange={(value) => onSettingsChange({ defaultOpacity: value[0] })}
-                    />
-                    <Button variant="ghost" size="sm" onClick={() => onSettingsChange({ defaultOpacity: 1 })}>Reset</Button>
+                <div className="grid gap-2 mt-4">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="default-blur">Background Blur</Label>
+                        <span className="text-xs text-muted-foreground">{Math.round(settings.defaultBackgroundBlur ?? 0)}px</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Slider
+                            id="default-blur"
+                            min={0}
+                            max={40}
+                            step={1}
+                            value={[settings.defaultBackgroundBlur ?? 0]}
+                            onValueChange={(value) => onSettingsChange({ defaultBackgroundBlur: value[0] })}
+                        />
+                        <Button variant="ghost" size="sm" onClick={() => onSettingsChange({ defaultBackgroundBlur: 0 })}>Reset</Button>
+                    </div>
                 </div>
-              </div>
-              <div className="grid gap-2 mt-4">
-                 <div className="flex items-center justify-between">
-                    <Label htmlFor="default-blur">Background Blur</Label>
-                    <span className="text-xs text-muted-foreground">{Math.round(settings.defaultBackgroundBlur ?? 0)}px</span>
-                 </div>
-                 <div className="flex items-center gap-2">
-                    <Slider
-                      id="default-blur"
-                      min={0}
-                      max={40}
-                      step={1}
-                      value={[settings.defaultBackgroundBlur ?? 0]}
-                      onValueChange={(value) => onSettingsChange({ defaultBackgroundBlur: value[0] })}
-                    />
-                    <Button variant="ghost" size="sm" onClick={() => onSettingsChange({ defaultBackgroundBlur: 0 })}>Reset</Button>
-                </div>
-              </div>
             </div>
 
             <Separator />
-            
+
             <h4 className="font-medium leading-none">Board Settings</h4>
             <div className="grid gap-2">
                 <Label htmlFor="accent-color">Accent Color</Label>
@@ -89,7 +90,7 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
                         <button
                             key={color}
                             className="w-6 h-6 rounded-full border-2"
-                            style={{ 
+                            style={{
                                 backgroundColor: `hsl(${color})`,
                                 borderColor: settings.accentColor === color ? `hsl(var(--foreground))` : 'transparent'
                             }}
@@ -98,35 +99,35 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
                     ))}
                 </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
                 <Label htmlFor="grid-toggle" className="font-medium">Show Grid</Label>
-                <Switch 
-                id="grid-toggle" 
-                checked={settings.showGrid} 
-                onCheckedChange={(checked) => onSettingsChange({ showGrid: checked })}
+                <Switch
+                    id="grid-toggle"
+                    checked={settings.showGrid}
+                    onCheckedChange={(checked) => onSettingsChange({ showGrid: checked })}
                 />
             </div>
-            
+
             <div className={!settings.showGrid ? 'opacity-50 pointer-events-none' : ''}>
                 <div className="grid gap-2">
                     <Label>Style</Label>
                     <RadioGroup
-                    value={settings.gridStyle || 'dots'}
-                    onValueChange={(value: GridStyle) => onSettingsChange({ gridStyle: value })}
-                    className="flex space-x-4"
+                        value={settings.gridStyle || 'dots'}
+                        onValueChange={(value: GridStyle) => onSettingsChange({ gridStyle: value })}
+                        className="flex space-x-4"
                     >
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="dots" id="dots" />
-                        <Label htmlFor="dots">Dots</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="lines" id="lines" />
-                        <Label htmlFor="lines">Lines</Label>
-                    </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="dots" id="dots" />
+                            <Label htmlFor="dots">Dots</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="lines" id="lines" />
+                            <Label htmlFor="lines">Lines</Label>
+                        </div>
                     </RadioGroup>
                 </div>
-                
+
                 <div className="grid gap-2 mt-4">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="grid-opacity">Grid Opacity</Label>
@@ -134,18 +135,18 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
                     </div>
                     <div className="flex items-center gap-2">
                         <Slider
-                        id="grid-opacity"
-                        min={0}
-                        max={1}
-                        step={0.1}
-                        value={[settings.gridOpacity || 0.5]}
-                        onValueChange={(value) => onSettingsChange({ gridOpacity: value[0] })}
+                            id="grid-opacity"
+                            min={0}
+                            max={1}
+                            step={0.1}
+                            value={[settings.gridOpacity || 0.5]}
+                            onValueChange={(value) => onSettingsChange({ gridOpacity: value[0] })}
                         />
                         <Button variant="ghost" size="sm" onClick={() => onSettingsChange({ gridOpacity: 0.5 })}>Reset</Button>
                     </div>
                 </div>
             </div>
-            
+
             <div className="grid gap-2">
                 <div className="flex items-center justify-between">
                     <Label htmlFor="zoom-slider">Zoom</Label>
@@ -185,15 +186,22 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
             <div className="grid gap-2">
                 <h4 className="font-medium leading-none">Data</h4>
                 <div className="flex gap-2">
-                  <Button variant="outline" className="w-full" onClick={onImport}>Import from JSON</Button>
-                  <Button variant="outline" className="w-full" onClick={onExport}>Export to JSON</Button>
+                    <Button variant="outline" className="w-full" onClick={onImport}>Import from JSON</Button>
+                    <Button variant="outline" className="w-full" onClick={onExport}>Export to JSON</Button>
                 </div>
             </div>
             <Separator />
-            <Button variant="ghost" className="w-full justify-start" onClick={onSignOut}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-            </Button>
+            {!isGuest && (
+                <Button variant="ghost" className="w-full justify-start" onClick={onSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                </Button>
+            )}
+            {isGuest && (
+                <Button variant="default" className="w-full justify-center mt-2" onClick={() => window.location.href = '/login'}>
+                    Sign In & Save
+                </Button>
+            )}
         </div>
     );
 };
