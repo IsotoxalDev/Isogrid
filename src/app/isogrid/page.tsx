@@ -555,7 +555,7 @@ export default function IsogridPage() {
         type,
         width: type === 'image' || type === 'board' ? 300 : 250,
         height: type === 'image' || type === 'board' ? 200 : 100,
-        content: type === 'text' ? 'New Text' : type === 'board' ? 'New Board' : PlaceHolderImages[0].imageUrl,
+        content: type === 'text' ? 'New Text' : type === 'board' ? 'New Board' : 'https://placehold.net/shape-600x400.png',
         ...(type === 'text' && {
           textAlign: 'left',
           textAligns: ['left'],
