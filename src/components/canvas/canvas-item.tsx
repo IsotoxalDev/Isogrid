@@ -380,10 +380,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
             {/* Visual Button to Edit Image - UPDATED STYLE */}
             <div className={cn(
               "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity duration-200 no-drag z-10",
-              "group-hover:opacity-100",
-              isSelected && "opacity-100" // Optional: keep it visible if selected? User said "does not appear when hovering", implying they want it on hover. 
-              // Actually, if I just add group-hover:opacity-100 it will work.
-              // But let's make it simple: always show on hover.
+              "group-hover:opacity-100"
             )}>
               <Button
                 size="icon"
