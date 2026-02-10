@@ -34,6 +34,16 @@ import { nanoid } from 'nanoid';
 import { base64ToBlob } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 import MoveToBoardDialog from '@/components/canvas/move-to-board-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const NoteEditor = dynamic(() => import('@/components/canvas/note-editor'), { ssr: false });
 
@@ -100,6 +110,7 @@ export default function IsogridPage() {
   const [draggedTodo, setDraggedTodo] = useState<DraggedTodoInfo | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const [moveDialog, setMoveDialog] = useState<{ show: boolean; itemId: string | null }>({ show: false, itemId: null });
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -600,7 +611,7 @@ export default function IsogridPage() {
     toast({ title: "Item moved successfully" });
   };
 
-  const handleContextMenuAction = (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow' | 'todo' | 'link' | 'title' | 'note'> | 'delete' | 'enter' | 'edit') => {
+  const handleContextMenuAction = (action: Extract<CanvasItemType, 'text' | 'image' | 'board' | 'arrow' | 'todo' | 'link' | 'title' | 'note'> | 'delete' | 'enter' | 'edit' | 'move') => {
     const canvasPos = screenToCanvas({ x: contextMenu.x, y: contextMenu.y });
 
     if (action === 'delete' && contextMenu.itemId) {
@@ -637,10 +648,33 @@ export default function IsogridPage() {
 
     if (action === 'arrow') {
       setArrowDrawingState({ isDrawing: true, startPoint: null });
-    } else if (action !== 'delete' && action !== 'enter' && action !== 'edit') {
+    } else if (action !== 'delete' && action !== 'enter' && action !== 'edit' && action !== 'move') {
       addItem(action, canvasPos);
     }
   };
+
+  const handleDeleteSelected = useCallback(() => {
+    const totalSelected = selectedItemIds.length + selectedArrowIds.length;
+    if (totalSelected === 0) return;
+
+    if (totalSelected > 1) {
+      setDeleteConfirmOpen(true);
+    } else {
+      confirmDelete();
+    }
+  }, [selectedItemIds, selectedArrowIds]);
+
+  const confirmDelete = useCallback(() => {
+    updateState(
+      items.filter(item => !selectedItemIds.includes(item.id)),
+      arrows.filter(arrow => !selectedArrowIds.includes(arrow.id))
+    );
+    const count = selectedItemIds.length + selectedArrowIds.length;
+    setSelectedItemIds([]);
+    setSelectedArrowIds([]);
+    setDeleteConfirmOpen(false);
+    toast({ title: `Deleted ${count} item${count > 1 ? 's' : ''}` });
+  }, [items, arrows, selectedItemIds, selectedArrowIds, updateState, toast]);
 
   const handleItemUpdate = (updatedItem: Partial<CanvasItemData> & { id: string }) => {
     updateState(
@@ -668,12 +702,12 @@ export default function IsogridPage() {
 
   const handleItemClick = (id: string, e: MouseEvent) => {
     e.stopPropagation();
-    setSelectedArrowIds([]);
     if (e.ctrlKey || e.metaKey) {
       setSelectedItemIds(ids =>
         ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
       );
     } else {
+      setSelectedArrowIds([]);
       if (!selectedItemIds.includes(id) || selectedItemIds.length > 1) {
         setSelectedItemIds([id]);
       }
@@ -682,12 +716,12 @@ export default function IsogridPage() {
 
   const handleArrowClick = (id: string, e: MouseEvent) => {
     e.stopPropagation();
-    setSelectedItemIds([]);
     if (e.ctrlKey || e.metaKey) {
       setSelectedArrowIds(ids =>
         ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
       );
     } else {
+      setSelectedItemIds([]);
       if (!selectedArrowIds.includes(id) || selectedArrowIds.length > 1) {
         setSelectedArrowIds([id]);
       }
@@ -784,10 +818,23 @@ export default function IsogridPage() {
           undo();
         }
       }
+
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        const target = e.target as HTMLElement;
+        const isInput = target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable ||
+          target.closest('.ql-editor'); // Quill editor check
+
+        if (!isInput) {
+          e.preventDefault();
+          handleDeleteSelected();
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [arrowDrawingState.isDrawing, undo, redo]);
+  }, [arrowDrawingState.isDrawing, undo, redo, handleDeleteSelected]);
 
   useEffect(() => {
     document.addEventListener('paste', handlePaste);
@@ -1196,6 +1243,26 @@ export default function IsogridPage() {
           onClose={() => setEditingNoteId(null)}
         />
       )}
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {selectedItemIds.length + selectedArrowIds.length} item{selectedItemIds.length + selectedArrowIds.length > 1 ? 's' : ''} from your canvas. This action can be undone with Ctrl+Z.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmDelete}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }
