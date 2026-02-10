@@ -1145,8 +1145,9 @@ export default function IsogridPage() {
         isOpen={moveDialog.show}
         onClose={() => setMoveDialog({ show: false, itemId: null })}
         onMove={handleMoveItem}
-        boards={items.filter(item => item.type === 'board').map(b => ({ id: b.id, name: b.content }))}
+        boards={items.filter(item => item.type === 'board').map(b => ({ id: b.id, name: b.content, parentId: b.parentId }))}
         currentBoardId={currentBoardId}
+        movingItemId={moveDialog.itemId}
       />
 
       {/* User Greeting */}
