@@ -72,4 +72,5 @@ export interface BoardSettings {
 export interface Board {
   id: string;
   name: string;
+  parentId?: string | null;
 }
