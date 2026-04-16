@@ -255,12 +255,23 @@ export default function IsogridPage() {
     }, [...(deps || []), delay]);
   };
 
+  // Track last-saved hash to skip redundant Firestore writes
+  const lastSavedHashRef = useRef<string>('');
+
   useDebouncedEffect(() => {
     if (!isLoading) {
+      // Only serialize image URLs (content field), not the entire base64 blob —
+      // using a simple hash based on stringified item IDs + positions + content
+      const stateSnapshot = JSON.stringify({ items, arrows, settings });
+      // Lightweight fingerprint: length + last 64 chars
+      const hash = `${stateSnapshot.length}:${stateSnapshot.slice(-64)}`;
+      if (hash === lastSavedHashRef.current) return; // nothing changed
+      lastSavedHashRef.current = hash;
+
       if (currentUser) {
         saveCanvasData(currentUser.uid, { items, arrows, settings });
       } else if (isGuest) {
-        localStorage.setItem('isogrid-guest-data', JSON.stringify({ items, arrows, settings }));
+        localStorage.setItem('isogrid-guest-data', stateSnapshot);
       }
     }
   }, [items, arrows, settings, currentUser, isLoading, isGuest], 1000);
@@ -766,39 +777,51 @@ export default function IsogridPage() {
         const blob = pastedItems[i].getAsFile();
         if (!blob) continue;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const src = e.target?.result as string;
-          if (!src) return;
+        // Show uploading feedback immediately
+        toast({ title: "Uploading image…", duration: 8000 });
 
-          const img = new Image();
-          img.onload = () => {
-            const MAX_WIDTH = 400;
-            const aspectRatio = img.naturalWidth / img.naturalHeight;
-            const width = Math.min(img.naturalWidth, MAX_WIDTH);
-            const height = width / aspectRatio;
-
-            const canvasCenter = screenToCanvas({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-
-            const newItem: CanvasItemData = {
-              id: nanoid(),
-              type: 'image',
-              position: { x: canvasCenter.x - width / 2, y: canvasCenter.y - height / 2 },
-              width: width,
-              height: height,
-              content: src,
-              parentId: currentBoardId,
+        try {
+          // Measure dimensions first (needed for canvas item size)
+          const tempUrl = URL.createObjectURL(blob);
+          const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              const MAX_WIDTH = 400;
+              const aspectRatio = img.naturalWidth / img.naturalHeight;
+              const w = Math.min(img.naturalWidth, MAX_WIDTH);
+              resolve({ width: w, height: w / aspectRatio });
+              URL.revokeObjectURL(tempUrl);
             };
-            updateState(prev => [...prev, newItem], arrows);
-            toast({ title: "Image pasted successfully!" });
+            img.onerror = () => { resolve({ width: 300, height: 200 }); URL.revokeObjectURL(tempUrl); };
+            img.src = tempUrl;
+          });
+
+          // Upload blob directly to Firebase Storage — no base64 round-trip
+          const itemId = nanoid();
+          const storageRef = ref(storage, `canvas-images/${itemId}/${Date.now()}_paste`);
+          const snapshot = await uploadBytes(storageRef, blob);
+          const downloadURL = await getDownloadURL(snapshot.ref);
+
+          const canvasCenter = screenToCanvas({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+          const newItem: CanvasItemData = {
+            id: itemId,
+            type: 'image',
+            position: { x: canvasCenter.x - dimensions.width / 2, y: canvasCenter.y - dimensions.height / 2 },
+            width: dimensions.width,
+            height: dimensions.height,
+            content: downloadURL,
+            parentId: currentBoardId,
           };
-          img.src = src;
-        };
-        reader.readAsDataURL(blob);
+          updateState(prev => [...prev, newItem], arrows);
+          toast({ title: "Image pasted successfully!" });
+        } catch (error) {
+          console.error('Failed to upload pasted image:', error);
+          toast({ variant: 'destructive', title: 'Failed to upload image', description: 'Please try again.' });
+        }
         return;
       }
     }
-  }, [screenToCanvas, toast, currentBoardId, arrows, items, updateState]);
+  }, [screenToCanvas, toast, currentBoardId, arrows, items, updateState, storage]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

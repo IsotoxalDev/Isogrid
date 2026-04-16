@@ -1,28 +1,15 @@
 "use server";
 
-import { encrypt, decrypt } from "@/lib/encryption";
-import type { CanvasData } from "@/lib/types";
+/**
+ * Server Actions for Isogrid.
+ *
+ * NOTE: Canvas encryption/decryption has been moved to the client-side
+ * (see `src/lib/firebase.ts`) to avoid sending large canvas payloads
+ * through the Next.js serverless function, which was causing
+ * FUNCTION_PAYLOAD_TOO_LARGE (413) errors on Vercel.
+ *
+ * This file is kept as the designated place for future server-only operations.
+ */
 
-export async function encryptCanvasData(data: CanvasData) {
-  const jsonString = JSON.stringify(data);
-  return encrypt(jsonString);
-}
-
-export async function decryptCanvasData(data: any): Promise<CanvasData | null> {
-  if (typeof data === 'string') {
-    try {
-      const decryptedString = decrypt(data);
-      return JSON.parse(decryptedString) as CanvasData;
-    } catch (error) {
-      console.error("Failed to decrypt or parse canvas data:", error);
-      return null;
-    }
-  }
-
-  // Handle unencrypted data (legacy support)
-  if (typeof data === 'object' && data !== null) {
-    return data as CanvasData;
-  }
-
-  return null;
-}
+// No active server actions at this time.
+// Add future server-only operations here.
