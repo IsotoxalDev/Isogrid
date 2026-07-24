@@ -64,6 +64,7 @@ export interface BoardSettings {
   showGrid?: boolean;
   gridStyle?: GridStyle;
   gridOpacity?: number;
+  snapToGrid?: boolean;
   vignetteIntensity?: number;
   defaultOpacity?: number;
   defaultBackgroundBlur?: number;
