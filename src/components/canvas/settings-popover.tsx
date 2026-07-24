@@ -109,6 +109,15 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
                 />
             </div>
 
+            <div className="flex items-center justify-between">
+                <Label htmlFor="snap-toggle" className="font-medium">Snap to Grid</Label>
+                <Switch
+                    id="snap-toggle"
+                    checked={settings.snapToGrid ?? false}
+                    onCheckedChange={(checked) => onSettingsChange({ snapToGrid: checked })}
+                />
+            </div>
+
             <div className={!settings.showGrid ? 'opacity-50 pointer-events-none' : ''}>
                 <div className="grid gap-2">
                     <Label>Style</Label>

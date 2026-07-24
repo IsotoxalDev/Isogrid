@@ -56,6 +56,7 @@ const INITIAL_SETTINGS: BoardSettings = {
   showGrid: true,
   gridStyle: 'dots',
   gridOpacity: 0.5,
+  snapToGrid: false,
   vignetteIntensity: 0.5,
   defaultOpacity: 1,
   defaultBackgroundBlur: 0
@@ -127,7 +128,7 @@ export default function IsogridPage() {
   const currentBoard = boardStack[boardStack.length - 1];
   const currentBoardId = currentBoard.id === 'root' ? null : currentBoard.id;
 
-  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, accentColor, vignetteIntensity = 0.5 } = settings;
+  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, snapToGrid = false, accentColor, vignetteIntensity = 0.5 } = settings;
 
   // --- Data Persistence ---
   useEffect(() => {
@@ -1138,6 +1139,8 @@ export default function IsogridPage() {
               key={item.id}
               item={item}
               zoom={viewState.zoom}
+              gridSize={GRID_SIZE}
+              snapToGrid={snapToGrid}
               onUpdate={handleItemUpdate}
               onClick={(e) => handleItemClick(item.id, e)}
               onDoubleClick={() => handleItemDoubleClick(item)}

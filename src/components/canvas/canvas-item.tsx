@@ -18,6 +18,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 interface CanvasItemProps {
   item: CanvasItemData;
   zoom: number;
+  gridSize: number;
+  snapToGrid?: boolean;
   onUpdate: (item: Partial<CanvasItemData> & { id: string }) => void;
   onClick: (event: MouseEvent) => void;
   onDoubleClick: () => void;
@@ -38,6 +40,8 @@ interface CanvasItemProps {
 const CanvasItem: FC<CanvasItemProps> = ({
   item,
   zoom,
+  gridSize,
+  snapToGrid,
   onUpdate,
   onClick,
   onDoubleClick,
@@ -92,6 +96,8 @@ const CanvasItem: FC<CanvasItemProps> = ({
 
   const MIN_SIZE = 40;
 
+  const snapValue = (value: number) => Math.round(value / gridSize) * gridSize;
+
   const handleMouseDown = (e: MouseEvent) => {
     if ((e.target as HTMLElement).closest('.no-drag, [data-no-drag="true"]')) {
       return;
@@ -109,11 +115,16 @@ const CanvasItem: FC<CanvasItemProps> = ({
       const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
         const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
         const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
+        let newX = itemStartPos.current.x + dx;
+        let newY = itemStartPos.current.y + dy;
+
+        if (snapToGrid && !moveEvent.altKey) {
+          newX = snapValue(newX);
+          newY = snapValue(newY);
+        }
+
         onUpdate({
-          id: item.id, position: {
-            x: itemStartPos.current.x + dx,
-            y: itemStartPos.current.y + dy,
-          }
+          id: item.id, position: { x: newX, y: newY }
         });
       };
 
@@ -170,6 +181,7 @@ const CanvasItem: FC<CanvasItemProps> = ({
     const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
       const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
       const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
+      const snapEnabled = !!snapToGrid && !moveEvent.altKey;
 
       const newUpdate: Partial<CanvasItemData> = {};
 
@@ -202,6 +214,9 @@ const CanvasItem: FC<CanvasItemProps> = ({
             // But simpler: newY = oldY + (oldH - newH)
             // Let's rely on the calculated newHeight.
           }
+          if (snapEnabled) {
+            newHeight = Math.max(MIN_SIZE, snapValue(newHeight));
+          }
           newWidth = newHeight * aspectRatio;
 
           // If 'n', we need to adjust Y based on the NEW height
@@ -230,6 +245,10 @@ const CanvasItem: FC<CanvasItemProps> = ({
           // Check for NE/NW/SE/SW specific interactions where dy might be dominant?
           // Usually taking the larger delta or specific axis is better, but Width-driving is consistent.
 
+          if (snapEnabled) {
+            newWidth = Math.max(MIN_SIZE, snapValue(newWidth));
+          }
+
           newHeight = newWidth / aspectRatio;
 
           // Adjust X if 'w' involved
@@ -250,22 +269,30 @@ const CanvasItem: FC<CanvasItemProps> = ({
       } else {
         // --- Standard Free Resize for Other Items ---
         if (direction.includes('e')) {
-          newUpdate.width = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
+          let newWidth = Math.max(MIN_SIZE, resizeStartSize.current.width + dx);
+          if (snapEnabled) newWidth = Math.max(MIN_SIZE, snapValue(newWidth));
+          newUpdate.width = newWidth;
         }
         if (direction.includes('w')) {
-          newUpdate.width = Math.max(MIN_SIZE, resizeStartSize.current.width - dx);
-          newUpdate.position = { ...item.position, x: itemStartPos.current.x + dx };
+          let newWidth = Math.max(MIN_SIZE, resizeStartSize.current.width - dx);
+          if (snapEnabled) newWidth = Math.max(MIN_SIZE, snapValue(newWidth));
+          newUpdate.width = newWidth;
+          newUpdate.position = { ...item.position, x: itemStartPos.current.x + (resizeStartSize.current.width - newWidth) };
         }
         if (direction.includes('s')) {
           // Link items usually don't have variable height in this implementation or should be careful
           if (item.type !== 'link') {
-            newUpdate.height = Math.max(MIN_SIZE, resizeStartSize.current.height + dy);
+            let newHeight = Math.max(MIN_SIZE, resizeStartSize.current.height + dy);
+            if (snapEnabled) newHeight = Math.max(MIN_SIZE, snapValue(newHeight));
+            newUpdate.height = newHeight;
           }
         }
         if (direction.includes('n')) {
           if (item.type !== 'link') {
-            newUpdate.height = Math.max(MIN_SIZE, resizeStartSize.current.height - dy);
-            newUpdate.position = { ...(newUpdate.position || item.position), y: itemStartPos.current.y + dy };
+            let newHeight = Math.max(MIN_SIZE, resizeStartSize.current.height - dy);
+            if (snapEnabled) newHeight = Math.max(MIN_SIZE, snapValue(newHeight));
+            newUpdate.height = newHeight;
+            newUpdate.position = { ...(newUpdate.position || item.position), y: itemStartPos.current.y + (resizeStartSize.current.height - newHeight) };
           }
         }
       }
