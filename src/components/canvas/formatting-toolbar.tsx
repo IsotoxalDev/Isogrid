@@ -14,6 +14,9 @@ import {
   Blend,
   BoxSelect,
   Palette,
+  PaintBucket,
+  SquareDashed,
+  X,
 } from 'lucide-react';
 import { CanvasItemData, TextAlign, FontWeight, FontStyle, TextDecoration } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -88,7 +91,10 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
   const commonTitleShadow = getCommonValue('titleShadow', false);
   const commonTitleOutline = getCommonValue('titleOutline', false);
   const commonColor = getCommonValue('color', undefined);
+  const commonBackgroundColor = getCommonValue<string | undefined>('backgroundColor', undefined);
+  const commonOutlineColor = getCommonValue<string | undefined>('outlineColor', undefined);
   const isTitle = targetItems.some(i => i.type === 'title');
+  const isTextOrTitle = targetItems.every(i => i.type === 'text' || i.type === 'title');
 
   const handleUpdate = (update: Partial<Omit<CanvasItemData, 'id' | 'textAligns'>>) => {
     const updates = targetItems.map((item) => ({ id: item.id, ...update }));
@@ -126,84 +132,88 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
       <div className="flex items-center gap-1 p-1 rounded-lg bg-background/80 backdrop-blur-sm border shadow-lg">
-        <Button
-          variant="ghost"
-          size="sm"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => handleTextAlignChange('left')}
-          className={cn(commonTextAlign === 'left' && 'bg-accent')}
-        >
-          <AlignLeft className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => handleTextAlignChange('center')}
-          className={cn(commonTextAlign === 'center' && 'bg-accent')}
-        >
-          <AlignCenter className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => handleTextAlignChange('right')}
-          className={cn(commonTextAlign === 'right' && 'bg-accent')}
-        >
-          <AlignRight className="w-4 h-4" />
-        </Button>
+        {isTextOrTitle && (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleTextAlignChange('left')}
+              className={cn(commonTextAlign === 'left' && 'bg-accent')}
+            >
+              <AlignLeft className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleTextAlignChange('center')}
+              className={cn(commonTextAlign === 'center' && 'bg-accent')}
+            >
+              <AlignCenter className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleTextAlignChange('right')}
+              className={cn(commonTextAlign === 'right' && 'bg-accent')}
+            >
+              <AlignRight className="w-4 h-4" />
+            </Button>
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+            <Separator orientation="vertical" className="h-6 mx-1" />
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => handleToggle('fontWeight', 'bold', 'normal')}
-          className={cn(commonFontWeight === 'bold' && 'bg-accent')}
-        >
-          <Bold className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => handleToggle('fontStyle', 'italic', 'normal')}
-          className={cn(commonFontStyle === 'italic' && 'bg-accent')}
-        >
-          <Italic className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => handleToggle('textDecoration', 'underline', 'none')}
-          className={cn(commonTextDecoration === 'underline' && 'bg-accent')}
-        >
-          <Underline className="w-4 h-4" />
-        </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleToggle('fontWeight', 'bold', 'normal')}
+              className={cn(commonFontWeight === 'bold' && 'bg-accent')}
+            >
+              <Bold className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleToggle('fontStyle', 'italic', 'normal')}
+              className={cn(commonFontStyle === 'italic' && 'bg-accent')}
+            >
+              <Italic className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleToggle('textDecoration', 'underline', 'none')}
+              className={cn(commonTextDecoration === 'underline' && 'bg-accent')}
+            >
+              <Underline className="w-4 h-4" />
+            </Button>
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+            <Separator orientation="vertical" className="h-6 mx-1" />
 
-        <div className="relative flex items-center justify-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-8 h-8 p-0"
-            title="Text Color"
-          >
-            <Palette className="w-4 h-4" style={{ color: commonColor || 'currentColor' }} />
-          </Button>
-          <input
-            type="color"
-            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-            value={commonColor || (targetItems[0]?.type === 'title' ? '#ffffff' : '#000000')}
-            onChange={(e) => handleUpdate({ color: e.target.value })}
-          />
-        </div>
+            <div className="relative flex items-center justify-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-8 h-8 p-0"
+                title="Text Color"
+              >
+                <Palette className="w-4 h-4" style={{ color: commonColor || 'currentColor' }} />
+              </Button>
+              <input
+                type="color"
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                value={commonColor || (targetItems[0]?.type === 'title' ? '#ffffff' : '#000000')}
+                onChange={(e) => handleUpdate({ color: e.target.value })}
+              />
+            </div>
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+            <Separator orientation="vertical" className="h-6 mx-1" />
+          </>
+        )}
 
         {isTitle && (
           <>
@@ -231,15 +241,76 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
           </>
         )}
 
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => e.preventDefault()} onClick={() => handleFontSizeChange(-1)}>
-            <Minus className="w-4 h-4" />
+        <div className="relative flex items-center justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-8 h-8 p-0"
+            title="Block Background Color"
+          >
+            <PaintBucket className="w-4 h-4" style={{ color: commonBackgroundColor || 'currentColor' }} />
           </Button>
-          <span className="text-sm font-medium w-8 text-center">{commonFontSize}</span>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => e.preventDefault()} onClick={() => handleFontSizeChange(1)}>
-            <Plus className="w-4 h-4" />
-          </Button>
+          <input
+            type="color"
+            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            value={commonBackgroundColor || '#ffffff'}
+            onChange={(e) => handleUpdate({ backgroundColor: e.target.value })}
+          />
+          {commonBackgroundColor && (
+            <button
+              type="button"
+              title="Reset Background Color"
+              className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={(e) => { e.stopPropagation(); handleUpdate({ backgroundColor: undefined }); }}
+            >
+              <X className="w-2.5 h-2.5" />
+            </button>
+          )}
         </div>
+
+        <div className="relative flex items-center justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-8 h-8 p-0"
+            title="Block Outline Color"
+          >
+            <SquareDashed className="w-4 h-4" style={{ color: commonOutlineColor || 'currentColor' }} />
+          </Button>
+          <input
+            type="color"
+            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            value={commonOutlineColor || '#000000'}
+            onChange={(e) => handleUpdate({ outlineColor: e.target.value })}
+          />
+          {commonOutlineColor && (
+            <button
+              type="button"
+              title="Reset Outline Color"
+              className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={(e) => { e.stopPropagation(); handleUpdate({ outlineColor: undefined }); }}
+            >
+              <X className="w-2.5 h-2.5" />
+            </button>
+          )}
+        </div>
+
+        {isTextOrTitle && (
+          <>
+            <Separator orientation="vertical" className="h-6 mx-1" />
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => e.preventDefault()} onClick={() => handleFontSizeChange(-1)}>
+                <Minus className="w-4 h-4" />
+              </Button>
+              <span className="text-sm font-medium w-8 text-center">{commonFontSize}</span>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onMouseDown={(e) => e.preventDefault()} onClick={() => handleFontSizeChange(1)}>
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

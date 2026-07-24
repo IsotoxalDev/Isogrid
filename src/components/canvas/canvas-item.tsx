@@ -394,6 +394,14 @@ const CanvasItem: FC<CanvasItemProps> = ({
       cardStyle.backdropFilter = `blur(${settings.defaultBackgroundBlur}px)`;
     }
   }
+  if (item.backgroundColor) {
+    cardStyle.backgroundColor = item.backgroundColor;
+  }
+  if (item.outlineColor) {
+    cardStyle.borderColor = item.outlineColor;
+    cardStyle.borderWidth = '2px';
+    cardStyle.borderStyle = 'solid';
+  }
 
   const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;

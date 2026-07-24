@@ -31,7 +31,7 @@ import { auth, saveCanvasData, loadCanvasData, storage } from '@/lib/firebase';
 import { signOut, onAuthStateChanged, type User } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { nanoid } from 'nanoid';
-import { base64ToBlob } from '@/lib/utils';
+import { base64ToBlob, hexToRgba } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 import MoveToBoardDialog from '@/components/canvas/move-to-board-dialog';
 import {
@@ -128,7 +128,7 @@ export default function IsogridPage() {
   const currentBoard = boardStack[boardStack.length - 1];
   const currentBoardId = currentBoard.id === 'root' ? null : currentBoard.id;
 
-  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, snapToGrid = false, accentColor, vignetteIntensity = 0.5 } = settings;
+  const { showGrid = true, gridStyle = 'dots', gridOpacity = 0.5, gridColor, gridThickness = 1, snapToGrid = false, accentColor, vignetteIntensity = 0.5, canvasBackgroundColor } = settings;
 
   // --- Data Persistence ---
   useEffect(() => {
@@ -1011,9 +1011,13 @@ export default function IsogridPage() {
 
   const scaledGridSize = GRID_SIZE * viewState.zoom;
 
+  const gridColorValue = gridColor ? hexToRgba(gridColor, gridOpacity) : `hsl(var(--muted-foreground) / ${gridOpacity})`;
+
+  // Radial-gradient dots need a soft feather at the edge of the color stop, otherwise
+  // the circle is rasterized with a hard 1px cutoff and looks jagged/pixelated.
   const gridBackgroundImage = gridStyle === 'dots'
-    ? `radial-gradient(hsl(var(--muted-foreground) / ${gridOpacity}) 1px, transparent 0)`
-    : `linear-gradient(hsl(var(--muted-foreground) / ${gridOpacity}) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--muted-foreground) / ${gridOpacity}) 1px, transparent 1px)`;
+    ? `radial-gradient(${gridColorValue} ${gridThickness}px, transparent ${gridThickness + 1}px)`
+    : `linear-gradient(${gridColorValue} ${gridThickness}px, transparent ${gridThickness}px), linear-gradient(90deg, ${gridColorValue} ${gridThickness}px, transparent ${gridThickness}px)`;
 
   const gridStyleProps: React.CSSProperties = {
     backgroundImage: gridBackgroundImage,
@@ -1034,7 +1038,6 @@ export default function IsogridPage() {
   };
 
   const selectedItems = items.filter(item => selectedItemIds.includes(item.id));
-  const selectedTextItems = selectedItems.filter(item => item.type === 'text' || item.type === 'title');
 
   if (isLoading || (!currentUser && !isGuest)) {
     return (
@@ -1047,6 +1050,7 @@ export default function IsogridPage() {
   return (
     <main
       className="w-screen h-screen overflow-hidden bg-background relative flex flex-col"
+      style={canvasBackgroundColor ? { backgroundColor: canvasBackgroundColor } : undefined}
       onDragOver={(e) => {
         if (draggedTodo) e.preventDefault();
       }}
@@ -1247,9 +1251,9 @@ export default function IsogridPage() {
         </Popover>
       </div>
       {contextMenu.show && <ContextMenu x={contextMenu.x} y={contextMenu.y} onAction={handleContextMenuAction} isItemMenu={!!contextMenu.itemId} itemType={allCanvasItems.find(i => i.id === contextMenu.itemId)?.type} accentColor={accentColor} />}
-      {(selectedTextItems.length > 0 || activeTextarea) && (
+      {(selectedItems.length > 0 || activeTextarea) && (
         <FormattingToolbar
-          items={selectedTextItems}
+          items={selectedItems}
           onUpdate={handleItemsUpdate}
           activeTextarea={activeTextarea}
           onTextareaUpdate={handleItemUpdate}

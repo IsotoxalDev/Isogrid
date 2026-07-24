@@ -38,6 +38,8 @@ export interface CanvasItemData {
   titleOutline?: boolean;
   // Common properties
   color?: string;
+  backgroundColor?: string;
+  outlineColor?: string;
   // Note properties
   noteTitle?: string;
 }
@@ -64,10 +66,13 @@ export interface BoardSettings {
   showGrid?: boolean;
   gridStyle?: GridStyle;
   gridOpacity?: number;
+  gridColor?: string; // CSS hex color, overrides the theme's default muted-foreground grid color
+  gridThickness?: number; // px, dot radius or line width
   snapToGrid?: boolean;
   vignetteIntensity?: number;
   defaultOpacity?: number;
   defaultBackgroundBlur?: number;
+  canvasBackgroundColor?: string; // CSS color, overrides the theme's default canvas background
 }
 
 export interface Board {
