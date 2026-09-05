@@ -4,13 +4,12 @@ service firebase.storage {
     // Allow access to canvas-images folder for authenticated users
     // This matches the path structure in src/components/canvas/canvas-item.tsx:
     // ref(storage, `canvas-images/${item.id}/${Date.now()}_${file.name}`)
+    // Note: this only requires the caller to be signed in, not that they have access
+    // to the specific board that owns itemId — the storage path doesn't carry a
+    // boardId, and Storage rules can't run a collection-group query to find which
+    // board's items subcollection contains this id. Tightening this further would
+    // need the upload path to include boardId (canvas-images/{boardId}/{itemId}/...).
     match /canvas-images/{itemId}/{fileName} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // Default fallback (though users should ideally use the specific path above)
-    // allowing authenticated users to read/write anywhere if needed for other features
-    match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
   }

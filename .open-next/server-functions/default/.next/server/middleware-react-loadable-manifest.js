@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST='{"app/isogrid/page.tsx -> @/components/canvas/note-editor":{"id":1506,"files":["static/css/b768cd3c08ab615c.css","static/chunks/929.8e90dae2c61ef89d.js","static/chunks/506.6242d5cd50857379.js"]}}';

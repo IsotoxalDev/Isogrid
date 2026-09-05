@@ -1,9 +1,88 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow users to read and write only their own document in the 'users' collection
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(board) {
+      return isSignedIn() && board.ownerId == request.auth.uid;
+    }
+
+    function hasRole(board, roles) {
+      return isSignedIn() && board.collaborators[request.auth.uid] in roles;
+    }
+
+    function directRead(board) {
+      return isOwner(board) || hasRole(board, ['viewer', 'editor']);
+    }
+
+    function directEdit(board) {
+      return isOwner(board) || hasRole(board, ['editor']);
+    }
+
+    function boardAt(boardId) {
+      return get(/databases/$(database)/documents/boards/$(boardId)).data;
+    }
+
+    // Sharing a board grants access to everything nested inside it, but not the
+    // other way around — access to board 'a' should never imply access to a's
+    // parent or siblings. So read/edit access walks UP the parentId chain from
+    // the target board, granting access if the board itself OR any ancestor
+    // grants it directly. Firestore rules can't recurse, so this is manually
+    // unrolled to a fixed max depth of 8 nested boards (comfortably covers real
+    // usage; a chain deeper than that falls back to no inherited access beyond
+    // depth 8).
+    function canReadChain8(board) { return directRead(board); }
+    function canReadChain7(board) { return directRead(board) || (board.parentId != null && canReadChain8(boardAt(board.parentId))); }
+    function canReadChain6(board) { return directRead(board) || (board.parentId != null && canReadChain7(boardAt(board.parentId))); }
+    function canReadChain5(board) { return directRead(board) || (board.parentId != null && canReadChain6(boardAt(board.parentId))); }
+    function canReadChain4(board) { return directRead(board) || (board.parentId != null && canReadChain5(boardAt(board.parentId))); }
+    function canReadChain3(board) { return directRead(board) || (board.parentId != null && canReadChain4(boardAt(board.parentId))); }
+    function canReadChain2(board) { return directRead(board) || (board.parentId != null && canReadChain3(boardAt(board.parentId))); }
+    function canReadChain1(board) { return directRead(board) || (board.parentId != null && canReadChain2(boardAt(board.parentId))); }
+    function canRead(board) { return directRead(board) || (board.parentId != null && canReadChain1(boardAt(board.parentId))); }
+
+    function canEditChain8(board) { return directEdit(board); }
+    function canEditChain7(board) { return directEdit(board) || (board.parentId != null && canEditChain8(boardAt(board.parentId))); }
+    function canEditChain6(board) { return directEdit(board) || (board.parentId != null && canEditChain7(boardAt(board.parentId))); }
+    function canEditChain5(board) { return directEdit(board) || (board.parentId != null && canEditChain6(boardAt(board.parentId))); }
+    function canEditChain4(board) { return directEdit(board) || (board.parentId != null && canEditChain5(boardAt(board.parentId))); }
+    function canEditChain3(board) { return directEdit(board) || (board.parentId != null && canEditChain4(boardAt(board.parentId))); }
+    function canEditChain2(board) { return directEdit(board) || (board.parentId != null && canEditChain3(boardAt(board.parentId))); }
+    function canEditChain1(board) { return directEdit(board) || (board.parentId != null && canEditChain2(boardAt(board.parentId))); }
+    function canEdit(board) { return directEdit(board) || (board.parentId != null && canEditChain1(boardAt(board.parentId))); }
+
+    // Allow users to read and write only their own document in the 'users' collection.
+    // Kept during the migration window; see boards/{boardId} below for the new model.
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /boards/{boardId} {
+      allow read: if canRead(resource.data);
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isOwner(resource.data) ||
+        (canEdit(resource.data) &&
+         request.resource.data.collaborators == resource.data.collaborators &&
+         request.resource.data.ownerId == resource.data.ownerId);
+      allow delete: if isOwner(resource.data);
+
+      match /items/{itemId} {
+        allow read: if canRead(boardAt(boardId));
+        allow write: if canEdit(boardAt(boardId));
+      }
+
+      match /arrows/{arrowId} {
+        allow read: if canRead(boardAt(boardId));
+        allow write: if canEdit(boardAt(boardId));
+      }
+    }
+
+    // Directory used for email-based sharing lookup (see ShareDialog).
+    match /userDirectory/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == uid;
     }
   }
 }
