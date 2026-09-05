@@ -140,16 +140,14 @@ export const createBoard = async (params: {
     name: string;
     parentId: string | null;
     ownerId: string;
-    settings: BoardSettings;
 }): Promise<void> => {
-    const { id, name, parentId, ownerId, settings } = params;
+    const { id, name, parentId, ownerId } = params;
     await setDoc(doc(db, "boards", id), {
         id,
         name,
         parentId,
         ownerId,
         collaborators: {},
-        settings,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     });
@@ -162,9 +160,26 @@ export const getBoardDoc = async (boardId: string): Promise<BoardDoc | null> => 
 
 export const updateBoardDoc = async (
     boardId: string,
-    partial: Partial<Pick<BoardDoc, "name" | "settings">>
+    partial: Partial<Pick<BoardDoc, "name">>
 ): Promise<void> => {
     await updateDoc(doc(db, "boards", boardId), { ...partial, updatedAt: serverTimestamp() });
+};
+
+// Personal view preferences (background color, grid, etc.) — per-user, per-board,
+// so one collaborator's theme choice never overwrites what another sees.
+export const getUserBoardSettings = async (boardId: string, uid: string): Promise<BoardSettings | null> => {
+    const snap = await getDoc(doc(db, "boards", boardId, "memberSettings", uid));
+    return snap.exists() ? (snap.data() as BoardSettings) : null;
+};
+
+export const setUserBoardSettings = async (boardId: string, uid: string, settings: BoardSettings): Promise<void> => {
+    await setDoc(doc(db, "boards", boardId, "memberSettings", uid), settings);
+};
+
+export const subscribeToUserBoardSettings = (boardId: string, uid: string, cb: (settings: BoardSettings | null) => void): Unsubscribe => {
+    return onSnapshot(doc(db, "boards", boardId, "memberSettings", uid), (snap) => {
+        cb(snap.exists() ? (snap.data() as BoardSettings) : null);
+    });
 };
 
 // Boards owned by this user, for the "move item to board" tree picker.
@@ -363,7 +378,12 @@ export const migrateLegacyUserBlob = async (userId: string, email: string, displ
         }
     }
 
-    await createBoard({ id: rootBoardId, name: "Home", parentId: null, ownerId: userId, settings });
+    await createBoard({ id: rootBoardId, name: "Home", parentId: null, ownerId: userId });
+    // The legacy blob had one BoardSettings object shared across the user's whole
+    // tree; seed it as this user's own memberSettings on every board created here
+    // so their visual preferences carry over exactly instead of resetting to
+    // defaults on first load under the new per-user-settings model.
+    await setUserBoardSettings(rootBoardId, userId, settings);
     for (const item of items) {
         if (item.type === "board") {
             await createBoard({
@@ -371,8 +391,8 @@ export const migrateLegacyUserBlob = async (userId: string, email: string, displ
                 name: item.content || "Untitled board",
                 parentId: boardIdForParent.get(item.parentId) ?? rootBoardId,
                 ownerId: userId,
-                settings,
             });
+            await setUserBoardSettings(item.id, userId, settings);
         }
     }
 

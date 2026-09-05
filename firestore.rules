@@ -77,6 +77,13 @@ service cloud.firestore {
         allow read: if canRead(boardAt(boardId));
         allow write: if canEdit(boardAt(boardId));
       }
+
+      // Personal view preferences (background color, grid, etc.) — deliberately
+      // per-user, not shared board state. One collaborator's theme/grid choice
+      // shouldn't overwrite what everyone else on the board sees.
+      match /memberSettings/{uid} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
     }
 
     // Directory used for email-based sharing lookup (see ShareDialog).

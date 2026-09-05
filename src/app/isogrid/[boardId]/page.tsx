@@ -39,6 +39,9 @@ import {
   getBoardDoc,
   createBoard,
   updateBoardDoc,
+  getUserBoardSettings,
+  setUserBoardSettings,
+  subscribeToUserBoardSettings,
   setBoardItem,
   deleteBoardItem,
   setBoardArrow,
@@ -309,7 +312,7 @@ export default function BoardPage() {
     const settingsHash = JSON.stringify(currentSettings);
     if (settingsHash !== lastSavedSettingsRef.current) {
       lastSavedSettingsRef.current = settingsHash;
-      updateBoardDoc(targetBoardId, { settings: currentSettings }).catch(err => console.error('Error saving settings:', err));
+      setUserBoardSettings(targetBoardId, user.uid, currentSettings).catch(err => console.error('Error saving settings:', err));
     }
   };
 
@@ -335,6 +338,7 @@ export default function BoardPage() {
     ancestorChainRef.current = [];
 
     let unsubBoard: (() => void) | null = null;
+    let unsubMemberSettings: (() => void) | null = null;
     let unsubItems: (() => void) | null = null;
     let unsubArrows: (() => void) | null = null;
 
@@ -350,7 +354,11 @@ export default function BoardPage() {
         }
         if (cancelled) return;
 
-        const resolvedSettings = { ...INITIAL_SETTINGS, ...(board.settings || {}) };
+        // Settings (background color, grid, etc.) are personal, per-user view
+        // preferences — not shared board state — so they're read from this
+        // user's own memberSettings doc, not the board doc itself.
+        const ownSettings = await getUserBoardSettings(boardId, user.uid);
+        const resolvedSettings = { ...INITIAL_SETTINGS, ...(ownSettings || {}) };
         setBoardMeta({ ownerId: board.ownerId, collaborators: board.collaborators || {} });
         setSettings(resolvedSettings);
         lastSavedSettingsRef.current = JSON.stringify(resolvedSettings);
@@ -391,15 +399,21 @@ export default function BoardPage() {
         unsubBoard = subscribeToBoardDoc(boardId, (liveBoard) => {
           if (!liveBoard) return;
           setBoardMeta({ ownerId: liveBoard.ownerId, collaborators: liveBoard.collaborators || {} });
-          const liveSettings = { ...INITIAL_SETTINGS, ...(liveBoard.settings || {}) };
-          const liveHash = JSON.stringify(liveSettings);
-          if (liveHash !== lastSavedSettingsRef.current) {
-            lastSavedSettingsRef.current = liveHash;
-            setSettings(liveSettings);
-          }
           setBoardStack(prevStack => prevStack.length > 0
             ? prevStack.map((b, i) => i === prevStack.length - 1 ? { ...b, name: liveBoard.name } : b)
             : prevStack);
+        });
+
+        // Personal settings sync — e.g. if this same user has the board open in
+        // another tab/device and changes the background color there.
+        unsubMemberSettings = subscribeToUserBoardSettings(boardId, user.uid, (liveSettings) => {
+          if (!liveSettings) return;
+          const resolvedLiveSettings = { ...INITIAL_SETTINGS, ...liveSettings };
+          const liveHash = JSON.stringify(resolvedLiveSettings);
+          if (liveHash !== lastSavedSettingsRef.current) {
+            lastSavedSettingsRef.current = liveHash;
+            setSettings(resolvedLiveSettings);
+          }
         });
 
         // Applies incoming item/arrow changes with echo suppression: skip a
@@ -474,6 +488,7 @@ export default function BoardPage() {
       // Firestore.
       flushSave(boardId);
       unsubBoard?.();
+      unsubMemberSettings?.();
       unsubItems?.();
       unsubArrows?.();
     };
@@ -886,7 +901,7 @@ export default function BoardPage() {
     // Boards are independently shareable, so every board item also needs its own
     // boards/{id} doc from the moment it's created.
     if (type === 'board' && user) {
-      createBoard({ id: newItem.id, name: newItem.content, parentId: currentBoardId, ownerId: user.uid, settings: {} })
+      createBoard({ id: newItem.id, name: newItem.content, parentId: currentBoardId, ownerId: user.uid })
         .catch(err => {
           console.error('Error creating board:', err);
           toast({ variant: 'destructive', title: 'Could not create board' });

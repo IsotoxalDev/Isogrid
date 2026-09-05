@@ -89,7 +89,6 @@ export interface BoardDoc {
   parentId: string | null; // null for a user's personal root board
   ownerId: string;
   collaborators: Record<string, BoardRole>;
-  settings: BoardSettings;
   createdAt?: unknown; // Firestore Timestamp
   updatedAt?: unknown; // Firestore Timestamp
 }
