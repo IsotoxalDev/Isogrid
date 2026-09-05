@@ -27,7 +27,7 @@ import SelectionBox from '@/components/canvas/selection-box';
 import InteractiveArrow from '@/components/canvas/interactive-arrow';
 import { Input } from '@/components/ui/input';
 import FormattingToolbar from '@/components/canvas/formatting-toolbar';
-import { auth, saveCanvasData, loadCanvasData, storage } from '@/lib/firebase';
+import { auth, storage, getUserRootBoardId, bulkSetBoardItems, bulkSetBoardArrows } from '@/lib/firebase';
 import { signOut, onAuthStateChanged, type User } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { nanoid } from 'nanoid';
@@ -148,10 +148,11 @@ export default function IsogridPage() {
       clearTimeout(timeoutId);
       try {
         if (user && user.emailVerified) {
-          setCurrentUser(user);
-          setIsGuest(false);
+          // Authenticated users live on the new per-board model at /isogrid/{boardId}.
+          // Resolve (and migrate, on first login) their personal root board, merge in
+          // any pre-login guest edits, then hand off to that route.
+          const rootBoardId = await getUserRootBoardId(user.uid, user.email ?? '', user.displayName ?? '');
 
-          // Check for guest data to migrate
           const guestDataString = localStorage.getItem('isogrid-guest-data');
           if (guestDataString) {
             try {
@@ -175,48 +176,18 @@ export default function IsogridPage() {
                 return item;
               }));
 
-              // Load existing remote data
-              const remoteData = await loadCanvasData(user.uid);
+              await bulkSetBoardItems(rootBoardId, migratedItems, user.uid);
+              await bulkSetBoardArrows(rootBoardId, guestData.arrows || [], user.uid);
 
-              // Merge data
-              const mergedItems = [...(remoteData?.items || []), ...migratedItems];
-              const mergedArrows = [...(remoteData?.arrows || []), ...(guestData.arrows || [])];
-              const mergedSettings = { ...(remoteData?.settings || INITIAL_SETTINGS), ...(guestData.settings || {}) };
-
-              // Save merged data
-              await saveCanvasData(user.uid, { items: mergedItems, arrows: mergedArrows, settings: mergedSettings });
-
-              // Update state
-              setItems(mergedItems);
-              setArrows(mergedArrows);
-              setSettings(mergedSettings);
-              setHistory([{ items: mergedItems, arrows: mergedArrows, settings: mergedSettings }]);
-
-              // Clear guest data
               localStorage.removeItem('isogrid-guest-data');
               toast({ title: "Guest data migrated successfully!" });
             } catch (e) {
               console.error("Error migrating guest data:", e);
-              // Fallback to loading remote data only if migration fails
-              const savedData = await loadCanvasData(user.uid);
-              if (savedData) {
-                setItems(savedData.items || []);
-                setArrows(savedData.arrows || []);
-                setSettings(savedData.settings || INITIAL_SETTINGS);
-                setHistory([{ items: savedData.items || [], arrows: savedData.arrows || [], settings: savedData.settings || INITIAL_SETTINGS }]);
-              }
             }
-          } else {
-            // Normal load
-            const savedData = await loadCanvasData(user.uid);
-            if (savedData) {
-              setItems(savedData.items || []);
-              setArrows(savedData.arrows || []);
-              setSettings(savedData.settings || INITIAL_SETTINGS);
-            }
-            setHistory([{ items: savedData?.items || [], arrows: savedData?.arrows || [], settings: savedData?.settings || INITIAL_SETTINGS }]);
           }
-          setHistoryIndex(0);
+
+          router.replace(`/isogrid/${rootBoardId}`);
+          return;
         } else {
           // Guest Mode
           setIsGuest(true);
@@ -260,22 +231,16 @@ export default function IsogridPage() {
   const lastSavedHashRef = useRef<string>('');
 
   useDebouncedEffect(() => {
-    if (!isLoading) {
-      // Only serialize image URLs (content field), not the entire base64 blob —
-      // using a simple hash based on stringified item IDs + positions + content
+    // Authenticated users are redirected to /isogrid/{boardId} before they can edit
+    // anything here, so this page only ever needs to persist guest (localStorage) state.
+    if (!isLoading && isGuest) {
       const stateSnapshot = JSON.stringify({ items, arrows, settings });
-      // Lightweight fingerprint: length + last 64 chars
       const hash = `${stateSnapshot.length}:${stateSnapshot.slice(-64)}`;
       if (hash === lastSavedHashRef.current) return; // nothing changed
       lastSavedHashRef.current = hash;
-
-      if (currentUser) {
-        saveCanvasData(currentUser.uid, { items, arrows, settings });
-      } else if (isGuest) {
-        localStorage.setItem('isogrid-guest-data', stateSnapshot);
-      }
+      localStorage.setItem('isogrid-guest-data', stateSnapshot);
     }
-  }, [items, arrows, settings, currentUser, isLoading, isGuest], 1000);
+  }, [items, arrows, settings, isLoading, isGuest], 1000);
 
   // --- END Data Persistence ---
 

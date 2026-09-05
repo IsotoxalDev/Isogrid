@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, updateProfile } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, writeUserDirectoryEntry } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { Loader2 } from "lucide-react";
@@ -58,9 +58,9 @@ export default function SignupPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       if (userCredential.user) {
-        await updateProfile(userCredential.user, {
-          displayName: `${firstName} ${lastName}`
-        });
+        const displayName = `${firstName} ${lastName}`;
+        await updateProfile(userCredential.user, { displayName });
+        await writeUserDirectoryEntry(userCredential.user.uid, { email, displayName });
         await sendEmailVerification(userCredential.user);
         setShowVerificationDialog(true);
       }

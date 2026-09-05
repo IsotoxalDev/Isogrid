@@ -80,3 +80,21 @@ export interface Board {
   name: string;
   parentId?: string | null;
 }
+
+export type BoardRole = 'viewer' | 'editor';
+
+export interface BoardDoc {
+  id: string;
+  name: string;
+  parentId: string | null; // null for a user's personal root board
+  ownerId: string;
+  collaborators: Record<string, BoardRole>;
+  settings: BoardSettings;
+  createdAt?: unknown; // Firestore Timestamp
+  updatedAt?: unknown; // Firestore Timestamp
+}
+
+export interface UserDirectoryEntry {
+  email: string;
+  displayName: string;
+}

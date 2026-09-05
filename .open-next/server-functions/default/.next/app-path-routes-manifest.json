@@ -1,0 +1,10 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/canvas/decrypt/route": "/api/canvas/decrypt",
+  "/api/canvas/route": "/api/canvas",
+  "/forgot-password/page": "/forgot-password",
+  "/isogrid/page": "/isogrid",
+  "/login/page": "/login",
+  "/page": "/",
+  "/signup/page": "/signup"
+}
