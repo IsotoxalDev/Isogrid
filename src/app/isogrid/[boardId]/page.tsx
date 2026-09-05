@@ -245,6 +245,74 @@ export default function BoardPage() {
     setBoardArrow(boardId, arrow, user.uid).catch(err => console.error('Error saving arrow:', err));
   };
 
+  // Always-current mirrors of items/arrows/settings, kept in sync via the effect
+  // below. Needed so flushSave (called from an effect cleanup when boardId is
+  // about to change) can see the LATEST values — a cleanup closure only has
+  // access to the state as it was when that effect instance was set up, which
+  // for a debounced save would be stale by the time navigation happens.
+  const itemsRef = useRef(items);
+  const arrowsRef = useRef(arrows);
+  const settingsRef = useRef(settings);
+  useEffect(() => {
+    itemsRef.current = items;
+    arrowsRef.current = arrows;
+    settingsRef.current = settings;
+  }, [items, arrows, settings]);
+
+  // True once this board's initial load has completed — guards flushSave against
+  // running on a half-initialized board (e.g. navigating away before load
+  // finishes), where itemsRef/arrowsRef would still hold stale/empty data.
+  const isBoardLoadedRef = useRef(false);
+
+  // Diffs the latest known items/arrows/settings against what's last known to be
+  // saved and writes anything that changed. Used both by the debounced effect
+  // below (the normal path) AND flushed synchronously from the load effect's
+  // cleanup so a change made just before navigating to another board — before
+  // the debounce timer fires — isn't silently discarded when that timer gets
+  // cancelled on the board switch.
+  const flushSave = (targetBoardId: string) => {
+    if (!user || !isBoardLoadedRef.current) return;
+    const currentItems = itemsRef.current;
+    const currentArrows = arrowsRef.current;
+    const currentSettings = settingsRef.current;
+
+    const currentItemIds = new Set(currentItems.map(i => i.id));
+    for (const oldId of Array.from(lastSavedItemsRef.current.keys())) {
+      if (!currentItemIds.has(oldId)) {
+        lastSavedItemsRef.current.delete(oldId);
+        deleteBoardItem(targetBoardId, oldId).catch(err => console.error('Error deleting item:', err));
+      }
+    }
+    for (const item of currentItems) {
+      const hash = JSON.stringify(item);
+      if (lastSavedItemsRef.current.get(item.id) !== hash) {
+        lastSavedItemsRef.current.set(item.id, hash);
+        setBoardItem(targetBoardId, item, user.uid).catch(err => console.error('Error saving item:', err));
+      }
+    }
+
+    const currentArrowIds = new Set(currentArrows.map(a => a.id));
+    for (const oldId of Array.from(lastSavedArrowsRef.current.keys())) {
+      if (!currentArrowIds.has(oldId)) {
+        lastSavedArrowsRef.current.delete(oldId);
+        deleteBoardArrow(targetBoardId, oldId).catch(err => console.error('Error deleting arrow:', err));
+      }
+    }
+    for (const arrow of currentArrows) {
+      const hash = JSON.stringify(arrow);
+      if (lastSavedArrowsRef.current.get(arrow.id) !== hash) {
+        lastSavedArrowsRef.current.set(arrow.id, hash);
+        setBoardArrow(targetBoardId, arrow, user.uid).catch(err => console.error('Error saving arrow:', err));
+      }
+    }
+
+    const settingsHash = JSON.stringify(currentSettings);
+    if (settingsHash !== lastSavedSettingsRef.current) {
+      lastSavedSettingsRef.current = settingsHash;
+      updateBoardDoc(targetBoardId, { settings: currentSettings }).catch(err => console.error('Error saving settings:', err));
+    }
+  };
+
   // --- Data loading + realtime sync ---
   useEffect(() => {
     if (authLoading) return;
@@ -254,6 +322,7 @@ export default function BoardPage() {
     }
 
     let cancelled = false;
+    isBoardLoadedRef.current = false;
     setIsBoardLoading(true);
     setItems([]);
     setArrows([]);
@@ -317,6 +386,7 @@ export default function BoardPage() {
         setSelectedArrowIds([]);
         setViewState({ zoom: 1, pan: { x: 0, y: 0 } });
         setIsBoardLoading(false);
+        isBoardLoadedRef.current = true;
 
         unsubBoard = subscribeToBoardDoc(boardId, (liveBoard) => {
           if (!liveBoard) return;
@@ -397,6 +467,12 @@ export default function BoardPage() {
 
     return () => {
       cancelled = true;
+      // Flush any change made just before navigating away (e.g. a settings
+      // tweak within the last 150ms) — otherwise the debounced save effect's
+      // own cleanup below cancels its pending timer on this same boardId
+      // change, and the edit would be silently lost instead of ever reaching
+      // Firestore.
+      flushSave(boardId);
       unsubBoard?.();
       unsubItems?.();
       unsubArrows?.();
@@ -414,42 +490,7 @@ export default function BoardPage() {
 
   useDebouncedEffect(() => {
     if (isBoardLoading || !user) return;
-
-    const currentItemIds = new Set(items.map(i => i.id));
-    for (const oldId of Array.from(lastSavedItemsRef.current.keys())) {
-      if (!currentItemIds.has(oldId)) {
-        lastSavedItemsRef.current.delete(oldId);
-        deleteBoardItem(boardId, oldId).catch(err => console.error('Error deleting item:', err));
-      }
-    }
-    for (const item of items) {
-      const hash = JSON.stringify(item);
-      if (lastSavedItemsRef.current.get(item.id) !== hash) {
-        lastSavedItemsRef.current.set(item.id, hash);
-        setBoardItem(boardId, item, user.uid).catch(err => console.error('Error saving item:', err));
-      }
-    }
-
-    const currentArrowIds = new Set(arrows.map(a => a.id));
-    for (const oldId of Array.from(lastSavedArrowsRef.current.keys())) {
-      if (!currentArrowIds.has(oldId)) {
-        lastSavedArrowsRef.current.delete(oldId);
-        deleteBoardArrow(boardId, oldId).catch(err => console.error('Error deleting arrow:', err));
-      }
-    }
-    for (const arrow of arrows) {
-      const hash = JSON.stringify(arrow);
-      if (lastSavedArrowsRef.current.get(arrow.id) !== hash) {
-        lastSavedArrowsRef.current.set(arrow.id, hash);
-        setBoardArrow(boardId, arrow, user.uid).catch(err => console.error('Error saving arrow:', err));
-      }
-    }
-
-    const settingsHash = JSON.stringify(settings);
-    if (settingsHash !== lastSavedSettingsRef.current) {
-      lastSavedSettingsRef.current = settingsHash;
-      updateBoardDoc(boardId, { settings }).catch(err => console.error('Error saving settings:', err));
-    }
+    flushSave(boardId);
   }, [items, arrows, settings, user, isBoardLoading, boardId], 150);
 
   // --- END Data Persistence ---
