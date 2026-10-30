@@ -1636,8 +1636,12 @@ export default function BoardPage() {
         <NoteEditor
           initialContent={items.find(i => i.id === editingNoteId)?.content || ''}
           initialTitle={items.find(i => i.id === editingNoteId)?.noteTitle || 'Untitled Note'}
+          initialBackgroundColor={items.find(i => i.id === editingNoteId)?.backgroundColor}
           onSave={(content, title) => {
             handleItemUpdate({ id: editingNoteId, content, noteTitle: title });
+          }}
+          onBackgroundColorChange={(backgroundColor) => {
+            handleItemUpdate({ id: editingNoteId, backgroundColor });
           }}
           onClose={() => setEditingNoteId(null)}
         />

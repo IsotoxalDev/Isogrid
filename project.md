@@ -214,6 +214,19 @@ it's easy to reintroduce this bug by "simplifying" the debounce back to a bare `
   reason (tradeoff: any signed-in user can check if an email is registered — existence-only, not
   data leakage).
 
+## Color pickers (`<input type="color">`) — use `ColorInput`, never a bare native input
+
+`src/components/ui/color-input.tsx` wraps `<input type="color">` and commits the value only on
+the native `change` event (fires once, when the picker closes), not React's `onChange` (which is
+wired to the native `input` event and fires continuously as the user drags through colors inside
+the browser's picker). Every raw `<input type="color" onChange={...}>` in this app used to commit
+every intermediate hovered color straight to board/settings state (and from there, Firestore) —
+so "pick white, then click Cancel in the picker" still left white applied and saved, since the
+browser's Cancel doesn't fire a revert and the app had already persisted the last-hovered value.
+Fixed across all 6 usages (`formatting-toolbar.tsx`: text/background/outline color;
+`settings-popover.tsx`: accent/canvas-background/grid color). **Any new color picker must use
+`ColorInput`, not a bare `<input type="color">`**, or this bug reappears.
+
 ## Known limitations / accepted tradeoffs (not oversights — don't "fix" without re-checking why)
 
 - Same item edited by two people at the exact same instant: last-write-wins, no CRDT/OT.

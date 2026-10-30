@@ -10,18 +10,23 @@ import { ChevronLeft, Cloud, Check, Loader2, Settings, LogOut } from 'lucide-rea
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { BoardSettings } from '@/lib/types';
+import ColorInput from '@/components/ui/color-input';
 // Removed unused debounce hook import as we used setTimeout
 
+const DEFAULT_NOTE_BACKGROUND = '#2a2a2a';
 
 interface NoteEditorProps {
     initialContent: string;
     initialTitle?: string;
+    initialBackgroundColor?: string;
     onSave: (content: string, title: string) => void;
+    onBackgroundColorChange: (color: string) => void;
     onClose: () => void;
 }
 
-const NoteEditor: React.FC<NoteEditorProps> = ({ initialContent, initialTitle = 'Untitled Note', onSave, onClose }) => {
+const NoteEditor: React.FC<NoteEditorProps> = ({ initialContent, initialTitle = 'Untitled Note', initialBackgroundColor, onSave, onBackgroundColorChange, onClose }) => {
     const [title, setTitle] = useState(initialTitle);
+    const [backgroundColor, setBackgroundColor] = useState(initialBackgroundColor || DEFAULT_NOTE_BACKGROUND);
     const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
 
     // Settings with localStorage
@@ -126,6 +131,11 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ initialContent, initialTitle = 
         }
     };
 
+    const handleBackgroundColorChange = (color: string) => {
+        setBackgroundColor(color);
+        onBackgroundColorChange(color);
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex flex-col bg-transparent animate-in fade-in duration-200">
             {/* Dark Background */}
@@ -158,6 +168,23 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ initialContent, initialTitle = 
                         </PopoverTrigger>
                         <PopoverContent className="w-80 z-[100]">
                             <div className="grid gap-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium">Page Background</label>
+                                    <div className="relative w-6 h-6 rounded-full overflow-hidden border border-input">
+                                        <div
+                                            className="w-6 h-6 rounded-full pointer-events-none"
+                                            style={{ backgroundColor }}
+                                        />
+                                        <ColorInput
+                                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                            value={backgroundColor}
+                                            onCommit={handleBackgroundColorChange}
+                                        />
+                                    </div>
+                                </div>
+
+                                <Separator />
+
                                 <h4 className="font-medium leading-none">Grid Settings</h4>
 
                                 <div className="flex items-center justify-between">
@@ -280,6 +307,11 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ initialContent, initialTitle = 
                     </span>
                     <div className="w-px h-8 bg-[#333] mx-2" />
                     <span className="ql-formats">
+                        <select className="ql-color"></select>
+                        <select className="ql-background"></select>
+                    </span>
+                    <div className="w-px h-8 bg-[#333] mx-2" />
+                    <span className="ql-formats">
                         <button className="ql-list" value="ordered"></button>
                         <button className="ql-list" value="bullet"></button>
                     </span>
@@ -307,7 +339,8 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ initialContent, initialTitle = 
                 onClick={() => quillRef.current?.focus()}
             >
                 <div
-                    className="bg-[#2a2a2a] shadow-lg min-h-[1100px] h-fit w-[816px] mx-auto p-12 relative text-gray-100 rounded-sm" // A4 Dimensions approx
+                    className="shadow-lg min-h-[1100px] h-fit w-[816px] mx-auto p-12 relative text-gray-100 rounded-sm" // A4 Dimensions approx
+                    style={{ backgroundColor }}
                     onClick={(e) => e.stopPropagation()} // Don't focus if clicking margins
                 >
                     <div ref={containerRef} className="font-serif" />

@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import ColorInput from '@/components/ui/color-input';
 import { LogOut, X } from 'lucide-react';
 import { cn, hexToHslString, hslStringToHex } from '@/lib/utils';
 
@@ -127,12 +128,10 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
                             className="w-6 h-6 rounded-full border-2 border-dashed border-muted-foreground pointer-events-none"
                             style={{ backgroundColor: settings.accentColor ? `hsl(${settings.accentColor})` : 'transparent' }}
                         />
-                        <input
-                            id="accent-color"
-                            type="color"
+                        <ColorInput
                             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                             value={settings.accentColor ? hslStringToHex(settings.accentColor) : '#c5d868'}
-                            onChange={(e) => handleColorChange(hexToHslString(e.target.value))}
+                            onCommit={(value) => handleColorChange(hexToHslString(value))}
                         />
                     </div>
                 </div>
@@ -157,12 +156,10 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
                             className="w-6 h-6 rounded-full border-2 border-dashed border-muted-foreground pointer-events-none"
                             style={{ backgroundColor: settings.canvasBackgroundColor || 'transparent' }}
                         />
-                        <input
-                            id="canvas-background-color"
-                            type="color"
+                        <ColorInput
                             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                             value={settings.canvasBackgroundColor || '#ffffff'}
-                            onChange={(e) => handleBackgroundColorChange(e.target.value)}
+                            onCommit={handleBackgroundColorChange}
                         />
                     </div>
                     {settings.canvasBackgroundColor && (
@@ -193,12 +190,10 @@ const SettingsPopover: FC<SettingsPopoverProps> = ({ settings, onSettingsChange,
                             className="w-6 h-6 rounded-full border-2 border-dashed border-muted-foreground pointer-events-none"
                             style={{ backgroundColor: settings.gridColor || 'transparent' }}
                         />
-                        <input
-                            id="grid-color"
-                            type="color"
+                        <ColorInput
                             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                             value={settings.gridColor || '#888888'}
-                            onChange={(e) => onSettingsChange({ gridColor: e.target.value })}
+                            onCommit={(value) => onSettingsChange({ gridColor: value })}
                         />
                     </div>
                     {settings.gridColor && (

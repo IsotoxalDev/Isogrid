@@ -21,6 +21,7 @@ import {
 import { CanvasItemData, TextAlign, FontWeight, FontStyle, TextDecoration } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import ColorInput from '@/components/ui/color-input';
 import { cn } from '@/lib/utils';
 
 interface FormattingToolbarProps {
@@ -203,11 +204,10 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
               >
                 <Palette className="w-4 h-4" style={{ color: commonColor || 'currentColor' }} />
               </Button>
-              <input
-                type="color"
+              <ColorInput
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                 value={commonColor || (targetItems[0]?.type === 'title' ? '#ffffff' : '#000000')}
-                onChange={(e) => handleUpdate({ color: e.target.value })}
+                onCommit={(value) => handleUpdate({ color: value })}
               />
             </div>
 
@@ -250,11 +250,10 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
           >
             <PaintBucket className="w-4 h-4" style={{ color: commonBackgroundColor || 'currentColor' }} />
           </Button>
-          <input
-            type="color"
+          <ColorInput
             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
             value={commonBackgroundColor || '#ffffff'}
-            onChange={(e) => handleUpdate({ backgroundColor: e.target.value })}
+            onCommit={(value) => handleUpdate({ backgroundColor: value })}
           />
           {commonBackgroundColor && (
             <button
@@ -278,11 +277,10 @@ const FormattingToolbar: FC<FormattingToolbarProps> = ({ items, onUpdate, active
           >
             <SquareDashed className="w-4 h-4" style={{ color: commonOutlineColor || 'currentColor' }} />
           </Button>
-          <input
-            type="color"
+          <ColorInput
             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
             value={commonOutlineColor || '#000000'}
-            onChange={(e) => handleUpdate({ outlineColor: e.target.value })}
+            onCommit={(value) => handleUpdate({ outlineColor: value })}
           />
           {commonOutlineColor && (
             <button

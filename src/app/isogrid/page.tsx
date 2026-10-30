@@ -1229,12 +1229,16 @@ export default function IsogridPage() {
         <NoteEditor
           initialContent={items.find(i => i.id === editingNoteId)?.content || ''}
           initialTitle={items.find(i => i.id === editingNoteId)?.noteTitle || 'Untitled Note'}
+          initialBackgroundColor={items.find(i => i.id === editingNoteId)?.backgroundColor}
           onSave={(content, title) => {
             handleItemUpdate({ id: editingNoteId, content, noteTitle: title });
-            // Don't close immediately on auto-save? The interface has a Close button now. 
+            // Don't close immediately on auto-save? The interface has a Close button now.
             // Wait, handleBack calls onClose. Auto-save calls onSave but we shouldn't close.
             // The prop is onSave, inside NoteEditor it calls it for auto-save.
             // We need to keep editingNoteId active.
+          }}
+          onBackgroundColorChange={(backgroundColor) => {
+            handleItemUpdate({ id: editingNoteId, backgroundColor });
           }}
           onClose={() => setEditingNoteId(null)}
         />
